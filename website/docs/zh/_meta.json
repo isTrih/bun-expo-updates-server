@@ -1,13 +1,13 @@
 [
   {
     "text": "home",
-    "link": "/zh/",
-    "activeMatch": "^/zh/$"
+    "link": "/",
+    "activeMatch": "^/$"
   },
   {
     "text": "guide",
-    "link": "/zh/guide/",
-    "activeMatch": "/zh/guide/"
+    "link": "/guide/",
+    "activeMatch": "/guide/"
   },
   {
     "text": "下载",
