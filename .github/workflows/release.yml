@@ -8,7 +8,7 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   check-release:
@@ -43,7 +43,8 @@ jobs:
 
           # Check commit message of the latest commit
           COMMIT_MSG=$(git log -1 --pretty=%B)
-          if echo "$COMMIT_MSG" | grep -q -E "^release(\(.+\))?:"; then
+          if echo "$COMMIT_MSG" | grep -q -E "^(feat|fix|perf|refactor|ci|build|release)(\(.+\))?:"; then
+          # if echo "$COMMIT_MSG" | grep -q -E "^release(\(.+\))?:"; then
             echo "Commit type indicates we should make a release"
             echo "should_release=true" >> $GITHUB_OUTPUT
           else
