@@ -149,6 +149,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUBTOKEN }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -173,5 +175,9 @@ jobs:
 
       - name: Create Git tag
         run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git tag v${{ needs.check-release.outputs.version }}
           git push origin v${{ needs.check-release.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
