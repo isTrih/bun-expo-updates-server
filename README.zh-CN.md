@@ -1,10 +1,19 @@
+# Custom Expo Update Server
+
 <p align="center">
   <img src="./website/docs/public/beu-icon.png" alt="Bun Expo Updates Server" width="200"/>
 </p>
 
-# 自定义 Expo 更新服务器
 
 <p align="center"><a href="./README.md">English Documentation</a> | 中文文档</p>
+
+<p align="center">
+  <a href="https://bun-expo-updates.chaozj.com/"><img src="https://img.shields.io/badge/文档网站-Documentation-blue?style=for-the-badge" alt="Documentation"/></a>
+</p>
+
+<p align="center">
+  <a href="https://afdian.tv/a/istrih"><img width="200" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="赞助我"></a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun"/>
@@ -96,7 +105,7 @@ bun-expo-updates-server/
     # Redis配置 | Redis Configuration
     # 格式 Format: redis://password@localhost:6379
     REDIS_URL=redis://localhost:6379
-    
+
     # 日志设置 | Log Settings
     # 是否开启调试日志 | Enable debug logs
     DEBUG=true
@@ -245,19 +254,19 @@ bun-expo-updates-server/
     pm2 start
     pm2 logs bun-updates
     ```
-    
+
     以上命令会启动服务器并显示日志输出。通过使用 pm2，服务器将在后台运行，即使在会话结束后也能继续运行。您也可以使用其他 pm2 命令来管理服务器:
-    
+
     ```bash
     # 查看所有进程状态
     pm2 list
-    
+
     # 停止服务器
     pm2 stop bun-updates
-    
+
     # 重启服务器
     pm2 restart bun-updates
-    
+
     # 设置服务器开机自启动
     pm2 startup
     pm2 save

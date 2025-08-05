@@ -1,9 +1,18 @@
+# Custom Expo Update Server
+
 <p align="center">
   <img src="./website/docs/public/beu-icon.png" alt="Bun Expo Updates Server" width="200"/>
 </p>
-# Custom Expo Update Server
 
 <p align="center">English Documentation | <a href="./README.zh-CN.md">中文文档</a></p>
+
+<p align="center">
+  <a href="https://bun-expo-updates.chaozj.com/en/"><img src="https://img.shields.io/badge/Documentation-Website-blue?style=for-the-badge" alt="Documentation"/></a>
+</p>
+
+<p align="center">
+  <a href="https://afdian.tv/a/istrih"><img width="200" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="Sponsor Me"></a>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun"/>
@@ -95,13 +104,13 @@ bun-expo-updates-server/
     # Redis Configuration
     # Format: redis://password@localhost:6379
     REDIS_URL=redis://localhost:6379
-   
+
     # Log Settings
     # Enable debug logs
     DEBUG=true
     # Log language setting (zh_CN/en_US)
     LOG_LANGUAGE=en_US
-   
+
     # Object Storage Service Configuration
     # OSS provider
     OSS_PROVIDER=your_oss_provider
@@ -117,19 +126,19 @@ bun-expo-updates-server/
     # OSS_BUCKET=your_bucket
     # OSS endpoint
     # OSS_ENDPOINT=your_endpoint
-   
+
     # Client Project Path
     # Local path to the client project
     CLIENT_PROJECT_PATH=/path/to/your/client/project
-   
+
     # Private Key Path Configuration
     # Path to the private key for code signing
     PRIVATE_KEY_PATH=code-sign-keys/private-key.pem
-   
+
     # Server Port Configuration
     # Port on which the server listens
     port=3001
-   
+
     # Update Resource Download URL (OSS or CDN)
     # Base URL for update resources
     HOSTNAME=https://your-update-domain.com
@@ -141,7 +150,7 @@ bun-expo-updates-server/
     ```bash
     bun install
     # Build the project
-   
+
     # Choose the appropriate target for your server architecture
     # Example: bun-linux-x64
     bun build \
@@ -189,48 +198,48 @@ bun-expo-updates-server/
           // Redis Configuration
           // Format: redis://password@localhost:6379
           "REDIS_URL": "redis://localhost:6379",
-   
+
           // Log Settings
           // Enable debug logs
           "DEBUG": "true",
-   
+
           // Log language setting (zh_CN/en_US)
           "LOG_LANGUAGE": "en_US",
-   
+
           // Object Storage Service Configuration
           // OSS provider
           "OSS_PROVIDER": "your_oss_provider",
-   
+
           // OSS access key
           "OSS_ACCESS_KEY": "your_access_key",
-   
+
           // OSS secret key
           "OSS_SECRET_KEY": "your_secret_key",
-   
+
           // Force path style (0 false, 1 true)
           "OSS_FORCE_PATH_STYLE": "0",
-   
+
           // OSS region
           // "OSS_REGION": "your_region",
-   
+
           // OSS bucket name
           // "OSS_BUCKET": "your_bucket",
-   
+
           // OSS endpoint
           // "OSS_ENDPOINT": "your_endpoint",
-   
+
           // Client Project Path
           // Local path to the client project
           "CLIENT_PROJECT_PATH": "/path/to/your/client/project",
-   
+
           // Private Key Path Configuration
           // Path to the private key for code signing
           "PRIVATE_KEY_PATH": "code-sign-keys/private-key.pem",
-   
+
           // Server Port Configuration
           // Port on which the server listens
           "port": "3001",
-   
+
           // Update Resource Download URL (OSS or CDN)
           // Base URL for update resources
           "HOSTNAME": "https://your-update-domain.com"
@@ -266,7 +275,7 @@ bun-expo-updates-server/
    ```bash
    # Export Expo client
    ./src/scripts/export-client.sh
-   
+
    # Upload updates to object storage
    bun run src/scripts/uploadUpdatesToOSS.ts
    ```
