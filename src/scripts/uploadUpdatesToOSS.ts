@@ -205,7 +205,7 @@ async function main() {
     //   endpoint: process.env.OSS_ENDPOINT,
     //   forcePathStyle: Boolean(Number(process.env.OSS_FORCE_PATH_STYLE)),
     // });
-    initializeOSS();
+    await initializeOSS();
 
     logger.info(
       currentLanguage === "en-US"
