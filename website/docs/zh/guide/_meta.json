@@ -1,0 +1,70 @@
+[
+  {
+    "type": "section-header",
+    "label": "入门指南"
+  },
+  {
+    "type": "file",
+    "name": "index",
+    "label": "快速开始"
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "核心概念"
+  },
+  {
+    "type": "file",
+    "name": "configuration",
+    "label": "配置"
+  },
+  {
+    "type": "file",
+    "name": "updates",
+    "label": "更新管理"
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "高级用法"
+  },
+  {
+    "type": "file",
+    "name": "oss-adapters",
+    "label": "对象存储适配器"
+  },
+  {
+    "type": "file",
+    "name": "binary-deployment",
+    "label": "二进制部署管理"
+  },
+
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "参考资料"
+  },
+  {
+    "type": "file",
+    "name": "api",
+    "label": "API 参考"
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "帮助"
+  },
+  {
+    "type": "file",
+    "name": "troubleshooting",
+    "label": "常见问题"
+  }
+]

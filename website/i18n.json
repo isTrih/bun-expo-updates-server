@@ -1,0 +1,50 @@
+{
+  "gettingStarted": {
+    "en": "Getting Started",
+    "zh": "开始"
+  },
+  "features": {
+    "en": "Features",
+    "zh": "特性"
+  },
+  "guide": {
+    "en": "Guide",
+    "zh": "指南"
+  },
+  "home": {
+    "en": "Home",
+    "zh": "首页"
+  },
+  "docs": {
+    "en": "Documentation",
+    "zh": "文档"
+  },
+  "api": {
+    "en": "API",
+    "zh": "接口"
+  },
+  "installation": {
+    "en": "Installation",
+    "zh": "安装"
+  },
+  "configuration": {
+    "en": "Configuration",
+    "zh": "配置"
+  },
+  "usage": {
+    "en": "Usage",
+    "zh": "使用方法"
+  },
+  "examples": {
+    "en": "Examples",
+    "zh": "示例"
+  },
+  "github": {
+    "en": "GitHub",
+    "zh": "GitHub"
+  },
+  "outlineTitle": {
+    "en": "ON THIS PAGE",
+    "zh": "页面导航"
+  }
+}

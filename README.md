@@ -1,129 +1,311 @@
-# Custom Expo Updates Server & Client
+<p align="center">
+  <img src="./website/docs/public/beu-icon.png" alt="Bun Expo Updates Server" width="200"/>
+</p>
+# Custom Expo Update Server
 
-This repo contains a server and client that implement the [Expo Updates protocol specification](https://docs.expo.dev/technical-specs/expo-updates-0).
+<p align="center">English Documentation | <a href="./README.zh-CN.md">中文文档</a></p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun"/>
+  <img src="https://img.shields.io/badge/TypeScript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/expo-1C1E24?style=for-the-badge&logo=expo&logoColor=#D04A37" alt="Expo"/>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"/>
+  <img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" alt="Maintained"/>
+</p>
+
+This repository contains a `BUN` server that implements the `Expo Updates` protocol specification.
 
 > [!IMPORTANT]
-> This repo exists to provide a basic demonstration of how the protocol might be translated to code. It is not guaranteed to be complete, stable, or performant enough to use as a full-fledged backend for expo-updates. Expo does not provide hands-on technical support for custom expo-updates server implementations, including what is in this repo. Issues within the expo-updates client library itself (independent of server) may be reported at https://github.com/expo/expo/issues/new/choose. Any pull requests that add new features to this repository will likely be closed; instead, feel free to fork the repository to add new features.
+> This repository provides a basic demonstration of how the protocol can be converted into code. There is no guarantee that it is complete, stable, or performant enough to be used as a complete backend for `expo-updates`.
+> I do not provide technical support for such custom `expo-updates` server implementations.
 
-## Why
+## Why a Custom Update Server
+`Expo` provides a set of services called `EAS (Expo Application Services)`, which includes `EAS Update`, allowing you to host and serve updates for `Expo` applications using the `expo-updates` library.
 
-Expo provides a set of service named EAS (Expo Application Services), one of which is EAS Update which can host and serve updates for an Expo app using the [`expo-updates`](https://github.com/expo/expo/tree/main/packages/expo-updates) library.
+In some cases, such as ~~being unable to afford EAS services~~ or having your main users in China, you might need more precise control over how updates are delivered to your application. One option is to implement a custom update server that complies with the specification to provide update manifests and assets.
 
-In some cases more control of how updates are sent to an app may be needed, and one option is to implement a custom updates server that adheres to the specification in order to serve update manifests and assets. This repo contains an example server implementation of the specification and a client app configured to use the example server.
+## Tech Stack
+- Runtime Environment: Bun
+- Web Framework: Elysia
+- Development Language: TypeScript
+- OSS: Dogecloud Object Storage (S3 protocol)
 
-## Getting started
-
-### Updates overview
-
-To understand this repo, it's important to understand some terminology around updates:
-
-- **Runtime version**: Type: String. Runtime version specifies the version of the underlying native code your app is running. You'll want to update the runtime version of an update when it relies on new or changed native code, like when you update the Expo SDK, or add in any native modules into your apps. Failing to update an update's runtime version will cause your end-user's app to crash if the update relies on native code the end-user is not running.
-- **Platform**: Type: "ios" or "android". Specifies which platform to to provide an update.
-- **Manifest**: Described in the protocol. The manifest is an object that describes assets and other details that an Expo app needs to know to load an update.
-
-### How the `expo-update-server` works
-
-The flow for creating an update is as follows:
-
-1. Configure and build a "release" version of an app, then run it on a simulator or deploy to an app store.
-2. Run the project locally, make changes, then export the app as an update.
-3. In the server repo, we'll copy the update made in #2 to the **expo-update-server/updates** directory, under a corresponding runtime version sub-directory.
-4. In the "release" app, force close and reopen the app to make a request for an update from the custom update server. The server will return a manifest that matches the requests platform and runtime version.
-5. Once the "release" app receives the manifest, it will then make requests for each asset, which will also be served from this server.
-6. Once the app has all the required assets it needs from the server, it will load the update.
-
-## The setup
-
-Note: The app is configured to load updates from the server running at http://localhost:3000. If you prefer to load them from a different base URL (for example, in an Android emulator):
-1. Update `.env.local` in the server.
-2. Update `updates.url` in `app.json` and re-run the build steps below.
-
-### Create a "release" app
-
-The example Expo project configured for the server is located in **/expo-updates-client**.
-
-#### iOS
-
-Run `yarn` and `yarn ios --configuration Release`.
-
-#### Android
-
-Run `yarn` and then run `yarn android --variant release`.
-
-### Make a change
-
-Let's make a change to the project in /expo-updates-client that we'll want to push as an over-the-air update from our custom server to the "release" app. `cd` in to **/expo-updates-client**, then make a change in **App.js**.
-
-Once you've made a change you're happy with, inside of **/expo-updates-server**, run `yarn expo-publish`. Under the hood, this script runs `npx expo export` in the client, copies the exported app to the server, and then copies the Expo config to the server as well.
-
-### Send an update
-
-Now we're ready to run the update server. Run `yarn dev` in the server folder of this repo to start the server.
-
-In the simulator running the "release" version of the app, force close the app and re-open it. It should make a request to /api/manifest, then requests to /api/assets. After the app loads, it should show any changes you made locally.
-
-## Using Docker (MacOS ARM to AMD64 Linux)
-
-### 使用 Docker 构建和部署
-
-本项目支持通过 Docker 进行构建和部署，特别适合在 MacOS ARM（Apple Silicon）环境下构建 AMD64 Linux 可用的镜像。
-
-### 构建 Docker 镜像
-
-我们提供了一个构建脚本，可以轻松创建跨平台 Docker 镜像：
-
+## Project Structure
 ```bash
-# 赋予脚本执行权限
-chmod +x build-docker.sh
-
-# 运行构建脚本
-./build-docker.sh
+bun-expo-updates-server/
+├── .gitignore
+├── README.md
+├── README.zh-CN.md
+├── bun.lock
+├── package.json
+├── .env.example                             # Environment variable example file
+├── updates/                                 # Update file storage directory
+├── logs/                                    # Log files
+├── src/
+│   ├── index.ts                             # Application entry file
+│   ├── modules/                             # Core modules
+│   │   └── manifest.ts                      # Manifest processing module
+│   ├── config/                              # Configuration files
+│   │   └── oss-config.example.ts
+│   ├── code-sign-keys/                      # Code signing keys
+│   ├── test/                                # Test files
+│   │   └── utils/                           # Utility tests
+│   ├── scripts/                             # Script files
+│   │   ├── upload.sh                        # Version update script
+│   │   ├── exportClientExpoConfig.ts        # Export Expo client config script
+│   │   ├── updateMime.ts                    # Fix MIME type script
+│   │   └── uploadUpdatesToOSS.ts            # Upload updates to OSS script
+│   └── utils/                               # Utilities
+│       ├── helper-oss.ts                    # OSS helper functions
+│       ├── logger.ts                        # Logging tool
+│       ├── util.ts                          # General utility functions
+│       └── oss-provider/                    # OSS providers
+│           ├── dogecloud-adapter.ts         # Dogecloud adapter
+│           ├── s3-adapter.ts                # S3 adapter
+│           ├── factory.ts                   # Factory pattern adapter
+│           └── types.ts                     # OSS provider type definitions
+└── tsconfig.json
 ```
 
-构建脚本会引导您完成以下步骤：
-1. 检查 Docker buildx 环境
-2. 创建或使用多平台构建器
-3. 构建 AMD64 架构的 Docker 镜像
-4. 可选择是否推送到 Docker Hub
+## Getting Started
+### Update-Related Terminology
+- Runtime version: String type. Specifies the underlying native code version on which the app runs. When updates depend on new or changed native code (such as updating the Expo SDK or adding native modules), the runtime version needs to be updated.
+- Platform: "ios" or "android". Specifies the platform for which updates are provided.
+- Manifest: Object described in the protocol. Contains assets and other details needed for Expo applications to load updates.
 
-### 使用 Docker Compose 运行
+### How to Use the Server
+#### Development Environment Server
+1. Install dependencies and start the server
+   Run the following commands in the project root directory:
 
-我们还提供了 `docker-compose.yml` 文件，可以更便捷地配置和运行服务：
+   ```bash
+   bun install
+   bun run dev
+   ```
+   The server will start at http://localhost:3000.
 
-1. 创建环境变量文件：
-```bash
-cp .env.example .env
-```
+2. Configure Environment Variables
+   Create a `.env` file and configure the following variables:
 
-2. 编辑 `.env` 文件，填入您的 OSS 配置信息：
-```
-OSS_ACCESS_KEY=你的访问密钥
-OSS_SECRET_KEY=你的秘密密钥
-OSS_BUCKET=你的桶名称
-HOSTNAME=http://your-server-address:3000
-```
+   ```bash
+    # Redis Configuration
+    # Format: redis://password@localhost:6379
+    REDIS_URL=redis://localhost:6379
+   
+    # Log Settings
+    # Enable debug logs
+    DEBUG=true
+    # Log language setting (zh_CN/en_US)
+    LOG_LANGUAGE=en_US
+   
+    # Object Storage Service Configuration
+    # OSS provider
+    OSS_PROVIDER=your_oss_provider
+    # OSS access key
+    OSS_ACCESS_KEY=your_access_key
+    # OSS secret key
+    OSS_SECRET_KEY=your_secret_key
+    # Force path style (0 false, 1 true)
+    OSS_FORCE_PATH_STYLE=0
+    # OSS region
+    # OSS_REGION=your_region
+    # OSS bucket name
+    # OSS_BUCKET=your_bucket
+    # OSS endpoint
+    # OSS_ENDPOINT=your_endpoint
+   
+    # Client Project Path
+    # Local path to the client project
+    CLIENT_PROJECT_PATH=/path/to/your/client/project
+   
+    # Private Key Path Configuration
+    # Path to the private key for code signing
+    PRIVATE_KEY_PATH=code-sign-keys/private-key.pem
+   
+    # Server Port Configuration
+    # Port on which the server listens
+    port=3001
+   
+    # Update Resource Download URL (OSS or CDN)
+    # Base URL for update resources
+    HOSTNAME=https://your-update-domain.com
+   ```
 
-3. 启动服务：
-```bash
-docker-compose up -d
-```
+#### Production Environment Server
+1. Build the Project
+   Run the following commands in the project root directory:
+    ```bash
+    bun install
+    # Build the project
+   
+    # Choose the appropriate target for your server architecture
+    # Example: bun-linux-x64
+    bun build \
+            --compile \
+            --minify \
+            --target bun-linux-x64 \
+            --outfile server \
+            ./src/index.ts
+    ```
+    | --target              | OS      | Architecture | `haswell` architecture | `nehalem` architecture |
+    | --------------------- | ------- | ----------- | :-------------------: | :--------------------: |
+    | bun-linux-x64         | Linux   | x64        |          ✅           |          ✅            |
+    | bun-linux-arm64       | Linux   | arm64      |          ✅           |          N/A           |
+    | bun-windows-x64       | Windows | x64        |          ✅           |          ✅            |
+    | ~~bun-windows-arm64~~ | Windows | arm64      |          ❌           |          ❌            |
+    | bun-darwin-x64        | macOS   | x64        |          ✅           |          ✅            |
+    | bun-darwin-arm64      | macOS   | arm64      |          ✅           |          N/A           |
 
-### 手动运行 Docker 镜像
+2. Start the Server
+   - Run the following commands in the same directory as the `server` file:
+    ```bash
+        # Grant execute permission
+        chmod +x server
+        mkdir -p logs
+        # Start the server
+        ./server
+    ```
+   - The server will start at http://localhost:3001.
 
-如果您不想使用 Docker Compose，也可以直接运行构建好的镜像：
+   - Using pm2 to manage the binary file
+     - Run the following commands in the same directory as the `server` file:
+    ```bash
+        # Grant execute permission
+        chmod +x server
+        mkdir -p logs
+    ```
+    - Create an `ecosystem.config.js` file:
+    ```javascript
+    module.exports = {
+    apps: [
+      {
+        name: "bun-updates",
+        script: "./server",
+        env: {
+          // Redis Configuration
+          // Format: redis://password@localhost:6379
+          "REDIS_URL": "redis://localhost:6379",
+   
+          // Log Settings
+          // Enable debug logs
+          "DEBUG": "true",
+   
+          // Log language setting (zh_CN/en_US)
+          "LOG_LANGUAGE": "en_US",
+   
+          // Object Storage Service Configuration
+          // OSS provider
+          "OSS_PROVIDER": "your_oss_provider",
+   
+          // OSS access key
+          "OSS_ACCESS_KEY": "your_access_key",
+   
+          // OSS secret key
+          "OSS_SECRET_KEY": "your_secret_key",
+   
+          // Force path style (0 false, 1 true)
+          "OSS_FORCE_PATH_STYLE": "0",
+   
+          // OSS region
+          // "OSS_REGION": "your_region",
+   
+          // OSS bucket name
+          // "OSS_BUCKET": "your_bucket",
+   
+          // OSS endpoint
+          // "OSS_ENDPOINT": "your_endpoint",
+   
+          // Client Project Path
+          // Local path to the client project
+          "CLIENT_PROJECT_PATH": "/path/to/your/client/project",
+   
+          // Private Key Path Configuration
+          // Path to the private key for code signing
+          "PRIVATE_KEY_PATH": "code-sign-keys/private-key.pem",
+   
+          // Server Port Configuration
+          // Port on which the server listens
+          "port": "3001",
+   
+          // Update Resource Download URL (OSS or CDN)
+          // Base URL for update resources
+          "HOSTNAME": "https://your-update-domain.com"
+        }
+      }
+    ]
+    }
+    ```
+    Run the following commands in the same directory as `ecosystem.config.js`:
+    ```bash
+    pm2 start
+    pm2 logs bun-updates
+    ```
 
-```bash
-docker run -d -p 3000:3000 \
-  -e OSS_ACCESS_KEY=你的访问密钥 \
-  -e OSS_SECRET_KEY=你的秘密密钥 \
-  -e OSS_BUCKET=你的桶名称 \
-  -e HOSTNAME=http://your-server-address:3000 \
-  --name expo-updates-server \
-  expo-updates-server:latest
-```
+3. Configure Expo Application
+   Ensure your Expo application is configured to load updates from your custom server. Set in your app's app.json file:
 
-## About this server
+   ```json
+   {
+     "expo": {
+       "updates": {
+         "url": "http://your-server-url.com/api/manifest",
+         "enabled": true,
+         "checkAutomatically": "ON_LOAD"
+       }
+     }
+   }
+   ```
 
-This server was created with NextJS. You can find the API endpoints in **pages/api/manifest.js** and **pages/api/assets.js**.
+4. Export and Upload Updates
+   Use the scripts provided in the project to export application updates and upload them to object storage:
 
-The code signing keys and certificates were generated using https://github.com/expo/code-signing-certificates.
+   ```bash
+   # Export Expo client
+   ./src/scripts/export-client.sh
+   
+   # Upload updates to object storage
+   bun run src/scripts/uploadUpdatesToOSS.ts
+   ```
+
+   Alternatively, you can use the command in `package.json`:
+   ```bash
+   bun up
+   ```
+   to generate and upload the hot update package.
+
+5. Access Updates
+   Client applications will automatically check for and download updates through the `/api/manifest` endpoint.
+
+## Server API
+The server currently provides the following API endpoints:
+
+- `GET /api/manifest`: Provides Expo update manifests
+  - Supported parameters:
+    - `expo-protocol-version`: Header parameter, supports versions 0 and 1
+    - `expo-platform`: Header parameter, value is "ios" or "android"
+    - `expo-runtime-version`: Header parameter, specifies the runtime version
+    - `expo-current-update-id`: Header parameter, ID of the client's current update
+    - `expo-embedded-update-id`: Header parameter, ID of the embedded update in the application
+    - `expo-expect-signature`: Header parameter, if set, the response will be signed
+  - Responses:
+    - Normal update: Returns a multipart/mixed response containing the latest update manifest and resource information
+    - Rollback update: Returns a multipart/mixed response with rollback instructions
+    - No update: Returns a response indicating that no update is available
+
+## About This Server
+This server is created using Bun and the Elysia framework, supporting Object Storage (OSS) functionality to manage update files. The main entry file is located at src/index.ts, and the core update handling logic is in src/modules/manifest.ts.
+
+The server supports the following features:
+- Multi-platform update support (iOS and Android)
+- Update management based on runtime version
+- Rollback mechanism
+- Code signature verification
+- Object Storage (OSS) integration
+- Logging
+
+## License
+This project is licensed under the MIT License.

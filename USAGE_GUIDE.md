@@ -1,217 +1,284 @@
 # OSS 适配器系统使用指南
 
-本指南将帮助您了解如何使用新的 OSS 适配器系统，以及如何从旧的 `helper.ts` 迁移到新系统。
+[English Version](#english-version) | 中文版
 
 ## 目录
 
 - [概述](#概述)
 - [快速开始](#快速开始)
+  - [1. 创建配置文件](#1-创建配置文件)
+  - [2. 设置环境变量](#2-设置环境变量)
+  - [3. 初始化 OSS](#3-初始化-oss)
+  - [4. 使用 OSS 功能](#4-使用-oss-功能)
 - [配置说明](#配置说明)
+  - [DogeCloud 配置](#dogecloud-配置)
+  - [AWS S3 配置](#aws-s3-配置)
+  - [其他云存储配置](#其他云存储配置)
 - [基本使用](#基本使用)
+  - [初始化和配置](#初始化和配置)
+  - [文件操作](#文件操作)
+  - [更新包管理](#更新包管理)
 - [高级功能](#高级功能)
+  - [多实例使用](#多实例使用)
+  - [预签名 URL](#预签名-url)
+  - [批量操作](#批量操作)
 - [自定义适配器](#自定义适配器)
-- [迁移指南](#迁移指南)
+  - [创建自定义适配器](#创建自定义适配器)
+  - [注册自定义适配器](#注册自定义适配器)
 - [最佳实践](#最佳实践)
+  - [环境配置](#环境配置)
+  - [错误处理](#错误处理)
 - [故障排除](#故障排除)
+  - [常见问题](#常见问题)
+  - [调试技巧](#调试技巧)
+- [总结](#总结)
 
 ## 概述
 
-新的 OSS 适配器系统提供了以下优势：
+OSS 适配器系统提供了统一的接口来访问各种对象存储服务（Object Storage Service, OSS），包括多吉云、AWS S3、阿里云 OSS、七牛云、腾讯云 COS 等。系统使用工厂模式和适配器模式，使开发者能够以一致的方式与不同的存储服务交互。
 
-- **可扩展性**: 轻松添加新的云存储服务商支持
-- **统一接口**: 所有存储服务使用相同的 API
-- **类型安全**: 完整的 TypeScript 类型支持
-- **多实例**: 同时使用多个不同的存储服务
-- **易于测试**: 支持模拟和测试
-- **配置灵活**: 支持环境变量和代码配置
+该系统是自定义 Expo 更新服务器的核心组件，负责存储和管理应用更新包。
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 创建配置文件
 
-确保您已安装必要的依赖：
+首先，从示例文件创建配置文件：
 
 ```bash
-# 如果使用 DogeCloud
-npm install @aws-sdk/client-s3
+# 复制示例配置文件
+cp src/config/oss-config.example.ts src/config/oss-config.ts
 
-# 如果使用 AWS S3
-npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
-
-# Redis (用于缓存)
-npm install bun redis
+# 根据需要编辑配置文件
+vim src/config/oss-config.ts
 ```
 
 ### 2. 设置环境变量
 
-根据您使用的存储服务商设置相应的环境变量：
+在项目根目录创建或编辑 `.env` 文件，配置 OSS 相关的环境变量：
 
 ```bash
-# DogeCloud
-export DOGE_CLOUD_ACCESS_KEY=your_access_key
-export DOGE_CLOUD_SECRET_KEY=your_secret_key
+# 选择 OSS 提供商（dogecloud、s3、aliyun、qiniu、tencent）
+OSS_PROVIDER=dogecloud
 
-# AWS S3
-export AWS_ACCESS_KEY_ID=your_access_key
-export AWS_SECRET_ACCESS_KEY=your_secret_key
-export AWS_REGION=us-east-1
+# OSS 访问凭证
+OSS_ACCESS_KEY=your_access_key
+OSS_SECRET_KEY=your_secret_key
 
-# 指定默认使用的 OSS 提供商
-export OSS_PROVIDER=dogecloud
+# 可选配置
+OSS_REGION=your_region
+OSS_BUCKET=your_bucket_name
+OSS_ENDPOINT=your_endpoint_url
+OSS_FORCE_PATH_STYLE=0  # 0表示false，1表示true
 ```
 
 ### 3. 初始化 OSS
 
-在您的应用启动时初始化 OSS：
+在应用启动时初始化 OSS：
 
 ```typescript
-import { setupDefaultOSS, createOSSConfig } from './src/utils/oss-provider/factory';
+import { initializeOSS } from "./config/oss-config";
 
 async function initApp() {
-  // 创建配置
-  const config = createOSSConfig('dogecloud', 'your-bucket-name');
-  
-  // 设置为默认 OSS
-  await setupDefaultOSS(config);
-  
-  console.log('OSS initialized successfully');
+  try {
+    // 初始化 OSS 配置
+    await initializeOSS();
+    
+    // 启动应用服务器
+    console.log("OSS initialized successfully, starting server...");
+    // 其他初始化代码...
+  } catch (error) {
+    console.error("Failed to initialize application:", error);
+    process.exit(1);
+  }
 }
 
-initApp().catch(console.error);
+initApp();
 ```
 
 ### 4. 使用 OSS 功能
 
+初始化完成后，可以通过 OSS 管理器执行各种操作：
+
 ```typescript
-import {
-  getLatestUpdateBundlePathForRuntimeVersionAsync,
-  getAssetMetadataAsync,
-  uploadFileAsync
-} from './src/utils/helper-oss';
+import { getDefaultOSSManager } from "./utils/oss-provider/factory";
 
-// 获取最新更新路径
-const latestPath = await getLatestUpdateBundlePathForRuntimeVersionAsync('1.0.0');
-
-// 获取资源元数据
-const metadata = await getAssetMetadataAsync({
-  updateBundlePath: latestPath,
-  filePath: 'bundle.js',
-  ext: null,
-  isLaunchAsset: true,
-  runtimeVersion: '1.0.0',
-  platform: 'ios',
-});
-
-// 上传文件
-await uploadFileAsync('path/to/file.txt', fileBuffer, 'text/plain');
+async function getLatestUpdate(platform: string, runtimeVersion: string) {
+  const ossManager = getDefaultOSSManager();
+  
+  // 获取最新更新包的路径
+  const latestPath = `updates/${platform}/${runtimeVersion}/latest`;
+  
+  // 检查是否存在
+  const exists = await ossManager.objectExists(latestPath);
+  if (!exists) {
+    return null;
+  }
+  
+  // 获取元数据
+  const metadata = await ossManager.getObjectMetadata(latestPath);
+  
+  return {
+    path: latestPath,
+    updateId: metadata.updateId,
+    createdAt: metadata.createdAt
+  };
+}
 ```
 
 ## 配置说明
 
+项目使用 `src/config/oss-config.ts` 文件进行 OSS 配置。以下是各种提供商的配置示例。
+
 ### DogeCloud 配置
 
 ```typescript
-const dogecloudConfig = createOSSConfig('dogecloud', 'bucket-name', {
-  accessKey: 'your-access-key',      // 可选，默认从环境变量读取
-  secretKey: 'your-secret-key',      // 可选，默认从环境变量读取
-});
+// DogeCloud 配置
+export const dogecloudConfig: OSSConfig = {
+  provider: "dogecloud",
+  accessKey: process.env.OSS_ACCESS_KEY,
+  secretKey: process.env.OSS_SECRET_KEY,
+  region: process.env.OSS_REGION || "automatic",
+  forcePathStyle: Boolean(Number(process.env.OSS_FORCE_PATH_STYLE)),
+};
 ```
 
 ### AWS S3 配置
 
 ```typescript
-const s3Config = createOSSConfig('s3', 'bucket-name', {
-  region: 'us-east-1',
-  accessKey: 'your-access-key',      // 可选，默认从环境变量读取
-  secretKey: 'your-secret-key',      // 可选，默认从环境变量读取
-  endpoint: 'https://s3.amazonaws.com', // 可选，用于自定义端点
-});
+// AWS S3 配置
+export const awsS3Config: OSSConfig = {
+  provider: "s3",
+  bucket: process.env.OSS_BUCKET || "your-s3-bucket",
+  region: process.env.OSS_REGION || "us-east-1",
+  accessKey: process.env.OSS_ACCESS_KEY,
+  secretKey: process.env.OSS_SECRET_KEY,
+};
 ```
 
-### 自定义配置
+### 其他云存储配置
+
+项目也支持配置其他云存储服务，如阿里云 OSS、七牛云、腾讯云 COS 等。详见 `oss-config.example.ts` 文件中的示例。
+
+自动选择配置的函数示例：
 
 ```typescript
-const customConfig = createOSSConfig('custom', 'bucket-name', {
-  endpoint: 'https://your-custom-endpoint.com',
-  region: 'your-region',
-  accessKey: 'your-access-key',
-  secretKey: 'your-secret-key',
-  // 任何其他自定义配置
-  customOption: 'custom-value',
-});
+// 根据环境变量选择配置
+export function getOSSConfig(): OSSConfig {
+  const provider = process.env.OSS_PROVIDER || "dogecloud";
+
+  switch (provider.toLowerCase()) {
+    case "dogecloud":
+      return dogecloudConfig;
+    case "aliyun":
+      return aliyunOSSConfig;
+    case "s3":
+    case "aws":
+      return awsS3Config;
+    case "qiniu":
+      return qiniuConfig;
+    case "tencent":
+    case "cos":
+      return tencentCOSConfig;
+    default:
+      throw new Error(`Unsupported OSS provider: ${provider}`);
+  }
+}
 ```
 
 ## 基本使用
 
 ### 初始化和配置
 
+在您的代码中初始化和使用 OSS 系统的典型流程：
+
 ```typescript
-import { 
-  setupDefaultOSS, 
-  createOSSConfig, 
-  getDefaultOSS,
-  OSSManager 
-} from './src/utils/oss-provider/factory';
+import { setupDefaultOSS, getDefaultOSSManager } from "./utils/oss-provider/factory";
+import { getOSSConfig } from "./config/oss-config";
 
-// 方式1: 使用全局默认配置
-const config = createOSSConfig('dogecloud', 'my-bucket');
-await setupDefaultOSS(config);
-
-// 方式2: 创建独立的管理器实例
-const manager = new OSSManager(config);
-await manager.initialize();
+async function initializeStorage() {
+  // 获取配置
+  const config = getOSSConfig();
+  
+  // 初始化默认 OSS 实例
+  await setupDefaultOSS(config);
+  
+  // 获取 OSS 管理器
+  const ossManager = getDefaultOSSManager();
+  
+  return ossManager;
+}
 ```
 
 ### 文件操作
 
+基本文件操作示例：
+
 ```typescript
-import {
-  uploadFileAsync,
-  deleteFileAsync,
-  fileExistsAsync,
-  getDirectoryContents
-} from './src/utils/helper-oss';
-
-// 上传文件
-await uploadFileAsync('uploads/file.txt', buffer, 'text/plain');
-
-// 检查文件是否存在
-const exists = await fileExistsAsync('uploads/file.txt');
-
-// 删除文件
-if (exists) {
-  await deleteFileAsync('uploads/file.txt');
+async function fileOperations() {
+  const ossManager = getDefaultOSSManager();
+  
+  // 检查文件是否存在
+  const exists = await ossManager.objectExists("path/to/file.json");
+  console.log(`File exists: ${exists}`);
+  
+  // 上传文件
+  const content = JSON.stringify({ key: "value" });
+  await ossManager.putObject("path/to/newfile.json", content, {
+    contentType: "application/json",
+    metadata: { createdAt: new Date().toISOString() }
+  });
+  
+  // 下载文件
+  const data = await ossManager.getObject("path/to/newfile.json");
+  console.log("File content:", data);
+  
+  // 删除文件
+  await ossManager.deleteObject("path/to/oldfile.json");
 }
-
-// 列出目录内容
-const contents = await getDirectoryContents('uploads/');
-console.log('Directory contents:', contents);
 ```
 
 ### 更新包管理
 
+处理 Expo 更新包的示例：
+
 ```typescript
-// 获取最新更新路径
-const latestPath = await getLatestUpdateBundlePathForRuntimeVersionAsync('1.0.0');
-
-// 获取元数据
-const metadata = await getMetadataAsync({
-  updateBundlePath: latestPath,
-  runtimeVersion: '1.0.0',
-});
-
-// 获取 Expo 配置
-const expoConfig = await getExpoConfigAsync({
-  updateBundlePath: latestPath,
-  runtimeVersion: '1.0.0',
-});
-
-// 创建回滚指令
-try {
-  const rollbackDirective = await createRollBackDirectiveAsync(latestPath);
-  console.log('Rollback available:', rollbackDirective);
-} catch (error) {
-  console.log('No rollback available');
+async function manageUpdates(platform: string, runtimeVersion: string, updateId: string) {
+  const ossManager = getDefaultOSSManager();
+  
+  // 获取最新更新路径
+  const latestPath = `updates/${platform}/${runtimeVersion}/latest`;
+  
+  // 设置更新元数据
+  const metadata = {
+    updateId,
+    platform,
+    runtimeVersion,
+    createdAt: new Date().toISOString()
+  };
+  
+  // 存储 Expo 配置
+  const expoConfig = {
+    name: "MyApp",
+    slug: "my-app",
+    version: "1.0.0",
+    // 其他配置...
+  };
+  
+  // 上传更新信息
+  await ossManager.putObject(latestPath, JSON.stringify(metadata), {
+    contentType: "application/json",
+    metadata
+  });
+  
+  // 上传配置
+  await ossManager.putObject(
+    `updates/${platform}/${runtimeVersion}/${updateId}/expo-config.json`, 
+    JSON.stringify(expoConfig),
+    { contentType: "application/json" }
+  );
+  
+  console.log(`Update ${updateId} published for ${platform} (${runtimeVersion})`);
 }
 ```
 
@@ -219,61 +286,104 @@ try {
 
 ### 多实例使用
 
+您可以创建和使用多个 OSS 实例，适用于不同的环境或服务：
+
 ```typescript
-// 创建多个 OSS 管理器
-const productionOSS = new OSSManager(createOSSConfig('s3', 'prod-bucket'));
-const stagingOSS = new OSSManager(createOSSConfig('dogecloud', 'staging-bucket'));
+import { createOSSManager } from "./utils/oss-provider/factory";
+import { getOSSConfig, envConfigs } from "./config/oss-config";
 
-await productionOSS.initialize();
-await stagingOSS.initialize();
-
-// 在不同环境中使用不同的 OSS
-const prodPath = await getLatestUpdateBundlePathForRuntimeVersionAsync(
-  '1.0.0',
-  productionOSS.getProvider()
-);
-
-const stagingPath = await getLatestUpdateBundlePathForRuntimeVersionAsync(
-  '1.0.0',
-  stagingOSS.getProvider()
-);
+async function setupMultipleInstances() {
+  // 创建生产环境实例
+  const productionOSS = await createOSSManager(envConfigs.production);
+  
+  // 创建测试环境实例
+  const stagingOSS = await createOSSManager(envConfigs.staging);
+  
+  // 使用生产实例
+  const prodPath = "production/updates/latest";
+  await productionOSS.putObject(prodPath, "production data", {
+    contentType: "text/plain",
+    metadata: { environment: "production" }
+  });
+  
+  // 使用测试实例
+  const stagingPath = "staging/updates/latest";
+  await stagingOSS.putObject(stagingPath, "staging data", {
+    contentType: "text/plain",
+    metadata: { environment: "staging" }
+  });
+}
 ```
 
 ### 预签名 URL
 
-```typescript
-import { generatePresignedUrlAsync } from './src/utils/helper-oss';
+生成预签名 URL，用于临时访问或上传文件：
 
-// 生成预签名 URL（如果提供商支持）
-try {
-  const presignedUrl = await generatePresignedUrlAsync(
-    'path/to/file.txt',
-    3600 // 1小时过期
-  );
-  console.log('Presigned URL:', presignedUrl);
-} catch (error) {
-  console.log('Presigned URLs not supported by current provider');
+```typescript
+async function generateDownloadLink(path: string, expiresInSeconds = 3600) {
+  const ossManager = getDefaultOSSManager();
+  
+  // 生成临时下载链接
+  const url = await ossManager.generatePresignedUrl(path, {
+    expires: expiresInSeconds,
+    operation: "getObject"
+  });
+  
+  return url;
+}
+
+async function generateUploadLink(path: string, expiresInSeconds = 3600) {
+  const ossManager = getDefaultOSSManager();
+  
+  // 生成临时上传链接
+  const url = await ossManager.generatePresignedUrl(path, {
+    expires: expiresInSeconds,
+    operation: "putObject",
+    contentType: "application/octet-stream"
+  });
+  
+  return url;
 }
 ```
 
 ### 批量操作
 
+执行批量文件操作：
+
 ```typescript
 // 批量上传文件
-async function batchUpload(files: { [key: string]: Buffer }) {
-  const uploadPromises = Object.entries(files).map(([key, buffer]) => 
-    uploadFileAsync(key, buffer)
-  );
+async function batchUpload(files: Array<{ path: string, content: string | Buffer }>) {
+  const ossManager = getDefaultOSSManager();
+  const results = [];
   
-  await Promise.all(uploadPromises);
-  console.log(`Uploaded ${Object.keys(files).length} files`);
+  for (const file of files) {
+    try {
+      await ossManager.putObject(file.path, file.content);
+      results.push({ path: file.path, success: true });
+    } catch (error) {
+      console.error(`Failed to upload ${file.path}:`, error);
+      results.push({ path: file.path, success: false, error });
+    }
+  }
+  
+  return results;
 }
 
 // 批量删除文件
-async function batchDelete(keys: string[]) {
-  const deletePromises = keys.map(key => deleteFileAsync(key));
-  await Promise.all(deletePromises);
-  console.log(`Deleted ${keys.length} files`);
+async function batchDelete(paths: string[]) {
+  const ossManager = getDefaultOSSManager();
+  const results = [];
+  
+  for (const path of paths) {
+    try {
+      await ossManager.deleteObject(path);
+      results.push({ path, success: true });
+    } catch (error) {
+      results.push({ path, success: false, error });
+    }
+  }
+  
+  return results;
 }
 ```
 
@@ -281,301 +391,210 @@ async function batchDelete(keys: string[]) {
 
 ### 创建自定义适配器
 
+您可以创建自定义适配器来支持其他对象存储服务：
+
 ```typescript
-import { IOSSProvider, OSSConfig } from './src/utils/oss-provider/types';
+import { OSSAdapter, OSSConfig } from "./utils/oss-provider/types";
 
-export class MyCustomOSSAdapter implements IOSSProvider {
+// 自定义适配器实现示例
+class MyCustomOSSAdapter implements OSSAdapter {
   private config: OSSConfig;
-  private client: any; // 您的客户端实例
-
+  private client: any; // 您的存储服务 SDK 客户端
+  
   constructor(config: OSSConfig) {
     this.config = config;
-    // 初始化您的客户端
-    this.client = new MyCustomClient({
-      endpoint: config.endpoint,
+    
+    // 初始化客户端
+    this.client = new YourStorageSDK({
       accessKey: config.accessKey,
       secretKey: config.secretKey,
+      endpoint: config.endpoint,
+      region: config.region,
+      bucket: config.bucket
     });
   }
-
+  
   getBucketName(): string {
-    return this.config.bucket;
+    return this.config.bucket || "default-bucket";
   }
-
-  async listObjects(params: OSSListObjectsParams): Promise<OSSListResult> {
-    // 实现列出对象的逻辑
-    const result = await this.client.listObjects({
-      bucket: params.Bucket,
-      prefix: params.Prefix,
-      delimiter: params.Delimiter,
+  
+  async listObjects(prefix?: string): Promise<string[]> {
+    try {
+      const response = await this.client.list({
+        prefix,
+        bucket: this.getBucketName()
+      });
+      
+      return response.objects.map((obj: any) => obj.key);
+    } catch (error) {
+      console.error("Failed to list objects:", error);
+      throw new Error(`List objects failed: ${error.message}`);
+    }
+  }
+  
+  async getObject(key: string): Promise<Buffer> {
+    try {
+      const response = await this.client.get(key, {
+        bucket: this.getBucketName()
+      });
+      
+      return Buffer.from(response.data);
+    } catch (error) {
+      throw new Error(`Get object failed: ${error.message}`);
+    }
+  }
+  
+  async putObject(key: string, data: Buffer | string, options?: any): Promise<void> {
+    try {
+      await this.client.put(key, data, {
+        bucket: this.getBucketName(),
+        contentType: options?.contentType,
+        metadata: options?.metadata
+      });
+    } catch (error) {
+      throw new Error(`Put object failed: ${error.message}`);
+    }
+  }
+  
+  async deleteObject(key: string): Promise<void> {
+    await this.client.delete(key, { bucket: this.getBucketName() });
+  }
+  
+  async headObject(key: string): Promise<any> {
+    try {
+      const response = await this.client.head(key, {
+        bucket: this.getBucketName()
+      });
+      
+      return {
+        contentLength: response.size,
+        contentType: response.contentType,
+        metadata: response.metadata
+      };
+    } catch (error) {
+      throw new Error(`Head object failed: ${error.message}`);
+    }
+  }
+  
+  async generatePresignedUrl(key: string, options?: any): Promise<string> {
+    return this.client.signUrl(key, {
+      expires: options?.expires || 3600,
+      operation: options?.operation || "getObject",
+      bucket: this.getBucketName()
     });
-
-    return {
-      Contents: result.objects?.map(obj => ({
-        Key: obj.name,
-        LastModified: obj.lastModified,
-        Size: obj.size,
-      })) || [],
-      CommonPrefixes: result.prefixes?.map(prefix => ({
-        Prefix: prefix,
-      })) || [],
-    };
-  }
-
-  async getObject(params: OSSGetObjectParams): Promise<OSSGetObjectResult> {
-    const result = await this.client.getObject(params.Bucket, params.Key);
-    return {
-      Body: result.body,
-      ContentType: result.contentType,
-      LastModified: result.lastModified,
-    };
-  }
-
-  async putObject(params: OSSPutObjectParams): Promise<void> {
-    await this.client.putObject(
-      params.Bucket,
-      params.Key,
-      params.Body,
-      { contentType: params.ContentType }
-    );
-  }
-
-  async deleteObject(params: OSSDeleteObjectParams): Promise<void> {
-    await this.client.deleteObject(params.Bucket, params.Key);
-  }
-
-  async headObject(params: OSSHeadObjectParams): Promise<OSSHeadObjectResult> {
-    const result = await this.client.headObject(params.Bucket, params.Key);
-    return {
-      ContentType: result.contentType,
-      ContentLength: result.contentLength,
-      LastModified: result.lastModified,
-    };
-  }
-
-  // 可选方法
-  async generatePresignedUrl(key: string, expiresIn?: number): Promise<string> {
-    return this.client.generatePresignedUrl(this.config.bucket, key, expiresIn);
   }
 }
 ```
 
 ### 注册自定义适配器
 
-```typescript
-import { OSSProviderFactory } from './src/utils/oss-provider/factory';
-import { MyCustomOSSAdapter } from './my-custom-adapter';
-
-// 注册适配器
-const factory = OSSProviderFactory.getInstance();
-factory.registerProvider('mycustom', MyCustomOSSAdapter);
-
-// 使用自定义适配器
-const config = createOSSConfig('mycustom' as any, 'my-bucket', {
-  endpoint: 'https://my-custom-oss.com',
-  accessKey: 'my-access-key',
-  secretKey: 'my-secret-key',
-});
-
-await setupDefaultOSS(config);
-```
-
-## 迁移指南
-
-### 从旧的 helper.ts 迁移
-
-#### 步骤 1: 替换导入
-
-**旧代码:**
-```typescript
-import { DogeClient, BUCKET_NAME } from './utils/oss-provider/dogecloud';
-import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-```
-
-**新代码:**
-```typescript
-import { setupDefaultOSS, createOSSConfig } from './utils/oss-provider/factory';
-import {
-  getLatestUpdateBundlePathForRuntimeVersionAsync,
-  getAssetMetadataAsync,
-  // ... 其他需要的函数
-} from './utils/helper-oss';
-```
-
-#### 步骤 2: 初始化配置
-
-**在应用启动时添加:**
-```typescript
-const config = createOSSConfig('dogecloud', process.env.BUCKET_NAME || 'default-bucket');
-await setupDefaultOSS(config);
-```
-
-#### 步骤 3: 替换直接的 S3 调用
-
-**旧代码:**
-```typescript
-const res = await DogeClient.send(new GetObjectCommand({
-  Bucket: BUCKET_NAME,
-  Key: 'some-key',
-}));
-```
-
-**新代码:**
-```typescript
-import { getDefaultOSS } from './utils/oss-provider/factory';
-
-const provider = getDefaultOSS().getProvider();
-const res = await provider.getObject({
-  Bucket: provider.getBucketName(),
-  Key: 'some-key',
-});
-```
-
-#### 步骤 4: 使用封装好的函数
-
-大多数常用操作已经封装在 `helper-oss.ts` 中，可以直接使用：
+注册自定义适配器并使用：
 
 ```typescript
-// 而不是手动构建 S3 命令，直接使用封装好的函数
-const latestPath = await getLatestUpdateBundlePathForRuntimeVersionAsync('1.0.0');
-const metadata = await getAssetMetadataAsync({...});
-```
+import { registerOSSAdapter, createOSSManager } from "./utils/oss-provider/factory";
+import { MyCustomOSSAdapter } from "./utils/oss-provider/my-custom-adapter";
 
-### 完整的迁移示例
+// 注册自定义适配器
+registerOSSAdapter("mycustom", MyCustomOSSAdapter);
 
-```typescript
-// 旧服务类
-class OldExpoUpdatesService {
-  async getUpdate(runtimeVersion: string) {
-    const res = await DogeClient.send(new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
-      Prefix: `updates/${runtimeVersion}/`,
-      Delimiter: '/',
-    }));
-    // ... 手动处理响应
-  }
-}
-
-// 新服务类
-class NewExpoUpdatesService {
-  async initialize() {
-    const config = createOSSConfig('dogecloud', 'my-bucket');
-    await setupDefaultOSS(config);
-  }
-
-  async getUpdate(runtimeVersion: string) {
-    // 使用封装好的函数，更简洁
-    return await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion);
-  }
+// 创建使用自定义适配器的实例
+async function useCustomAdapter() {
+  const factory = getOSSFactory();
+  
+  // 自定义配置
+  const config = {
+    provider: "mycustom", // 使用注册的自定义适配器名称
+    accessKey: "your-access-key",
+    secretKey: "your-secret-key",
+    endpoint: "https://storage.example.com",
+    bucket: "my-custom-bucket"
+  };
+  
+  // 创建实例
+  const customOSS = await createOSSManager(config);
+  
+  // 使用实例
+  await customOSS.putObject("test-file.txt", "Hello from custom OSS!");
 }
 ```
 
 ## 最佳实践
 
-### 1. 环境配置
+### 环境配置
+
+从环境变量创建配置的最佳实践：
 
 ```typescript
-// 推荐的配置方式
 function createOSSConfigFromEnv(): OSSConfig {
-  const provider = process.env.OSS_PROVIDER || 'dogecloud';
-  const bucket = process.env.OSS_BUCKET || 'default-bucket';
-
-  switch (provider) {
-    case 'dogecloud':
-      return createOSSConfig('dogecloud', bucket, {
-        accessKey: process.env.DOGE_CLOUD_ACCESS_KEY,
-        secretKey: process.env.DOGE_CLOUD_SECRET_KEY,
-      });
-    case 's3':
-      return createOSSConfig('s3', bucket, {
-        region: process.env.AWS_REGION,
-        accessKey: process.env.AWS_ACCESS_KEY_ID,
-        secretKey: process.env.AWS_SECRET_ACCESS_KEY,
-      });
-    default:
-      throw new Error(`Unsupported OSS provider: ${provider}`);
+  const provider = process.env.OSS_PROVIDER || "dogecloud";
+  
+  // 基本配置
+  const config: OSSConfig = {
+    provider,
+    accessKey: process.env.OSS_ACCESS_KEY,
+    secretKey: process.env.OSS_SECRET_KEY,
+  };
+  
+  // 根据不同提供商添加特定配置
+  if (process.env.OSS_BUCKET) {
+    config.bucket = process.env.OSS_BUCKET;
   }
+  
+  if (process.env.OSS_REGION) {
+    config.region = process.env.OSS_REGION;
+  }
+  
+  if (process.env.OSS_ENDPOINT) {
+    config.endpoint = process.env.OSS_ENDPOINT;
+  }
+  
+  if (process.env.OSS_FORCE_PATH_STYLE) {
+    config.forcePathStyle = Boolean(Number(process.env.OSS_FORCE_PATH_STYLE));
+  }
+  
+  return config;
 }
 ```
 
-### 2. 错误处理
+### 错误处理
+
+处理 OSS 操作错误的最佳实践：
 
 ```typescript
 async function safeOSSOperation<T>(
   operation: () => Promise<T>,
-  fallback?: T
-): Promise<T | undefined> {
+  errorMessage: string = "OSS operation failed"
+): Promise<T> {
   try {
     return await operation();
-  } catch (error) {
-    console.error('OSS operation failed:', error);
-    if (fallback !== undefined) {
-      return fallback;
+  } catch (error: any) {
+    // 检查网络错误
+    if (error.code === "ECONNREFUSED" || error.code === "NetworkingError") {
+      console.error("OSS connection error:", error);
+      throw new Error(`${errorMessage}: Connection failed - please check your network and OSS endpoint`);
     }
-    // 重新抛出错误或返回 undefined
-    throw error;
+    
+    // 检查认证错误
+    if (error.code === "AccessDenied" || error.code === "InvalidAccessKeyId") {
+      console.error("OSS authentication error:", error);
+      throw new Error(`${errorMessage}: Authentication failed - check your access credentials`);
+    }
+    
+    // 其他错误
+    console.error("OSS error:", error);
+    throw new Error(`${errorMessage}: ${error.message}`);
   }
 }
 
-// 使用示例
-const exists = await safeOSSOperation(
-  () => fileExistsAsync('some-file.txt'),
-  false // 出错时默认为 false
-);
-```
-
-### 3. 性能优化
-
-```typescript
-// 使用批量操作而不是单个操作
-async function optimizedUpload(files: { [key: string]: Buffer }) {
-  // 并行上传，但限制并发数
-  const concurrency = 5;
-  const chunks = Object.entries(files).reduce((acc, [key, buffer], index) => {
-    const chunkIndex = Math.floor(index / concurrency);
-    if (!acc[chunkIndex]) acc[chunkIndex] = [];
-    acc[chunkIndex].push([key, buffer]);
-    return acc;
-  }, [] as Array<Array<[string, Buffer]>>);
-
-  for (const chunk of chunks) {
-    await Promise.all(
-      chunk.map(([key, buffer]) => uploadFileAsync(key, buffer))
-    );
-  }
-}
-```
-
-### 4. 测试
-
-```typescript
-// 创建测试专用的 OSS 管理器
-function createTestOSSManager(): OSSManager {
-  const config = createOSSConfig('dogecloud', 'test-bucket', {
-    accessKey: 'test-key',
-    secretKey: 'test-secret',
-  });
-  return new OSSManager(config);
-}
-
-// 在测试中使用独立的实例
-test('should upload file', async () => {
-  const testManager = createTestOSSManager();
-  await testManager.initialize();
+// 使用安全操作
+async function checkFileExists(path: string): Promise<boolean> {
+  const ossManager = getDefaultOSSManager();
   
-  await uploadFileAsync(
-    'test-file.txt',
-    Buffer.from('test content'),
-    'text/plain',
-    testManager.getProvider()
+  return await safeOSSOperation(
+    () => ossManager.objectExists(path),
+    `Failed to check if ${path} exists`
   );
-  
-  const exists = await fileExistsAsync(
-    'test-file.txt',
-    testManager.getProvider()
-  );
-  expect(exists).toBe(true);
-});
+}
 ```
 
 ## 故障排除
@@ -584,74 +603,124 @@ test('should upload file', async () => {
 
 #### 1. "Default OSS not configured" 错误
 
-**原因**: 没有调用 `setupDefaultOSS()` 初始化默认 OSS。
+如果遇到 "Default OSS not configured" 错误，表示您尚未初始化默认的 OSS 实例。确保在使用 OSS 功能前调用 `initializeOSS()` 或 `setupDefaultOSS()`。
 
-**解决方案**:
+解决方案：
+
 ```typescript
-const config = createOSSConfig('dogecloud', 'your-bucket');
+import { setupDefaultOSS } from "./utils/oss-provider/factory";
+import { getOSSConfig } from "./config/oss-config";
+
+// 在应用启动时调用
+const config = getOSSConfig();
 await setupDefaultOSS(config);
 ```
 
 #### 2. "access key and secret key are required" 错误
 
-**原因**: 缺少必要的认证信息。
+确保在环境变量或配置文件中提供了访问凭证：
 
-**解决方案**:
-- 检查环境变量是否正确设置
-- 或在配置中明确指定 accessKey 和 secretKey
+```
+OSS_ACCESS_KEY=your-access-key-here
+OSS_SECRET_KEY=your-secret-key-here
+```
+
+或在配置中直接设置（不推荐在生产环境中这样做）：
+
+```typescript
+const config: OSSConfig = {
+  provider: "dogecloud",
+  accessKey: "your-access-key-here",
+  secretKey: "your-secret-key-here",
+  // 其他配置...
+};
+```
 
 #### 3. "Unsupported OSS provider" 错误
 
-**原因**: 尝试使用未注册的 OSS 提供商。
+检查 `OSS_PROVIDER` 环境变量是否设置为受支持的值，或确保您已注册了自定义适配器：
 
-**解决方案**:
 ```typescript
-// 检查可用的提供商
-const factory = OSSProviderFactory.getInstance();
-console.log('Available providers:', factory.getAvailableProviders());
+import { registerOSSAdapter } from "./utils/oss-provider/factory";
+import { MyCustomAdapter } from "./path/to/my-adapter";
 
-// 或注册自定义提供商
-factory.registerProvider('mycustom', MyCustomAdapter);
+// 注册自定义适配器
+const factory = getOSSFactory();
+factory.registerAdapter("mycustom", MyCustomAdapter);
+
+// 然后使用该适配器
+const config = {
+  provider: "mycustom",
+  // 其他配置...
+};
 ```
 
 #### 4. 网络连接错误
 
-**原因**: 网络问题或端点配置错误。
+如果遇到网络连接问题，请检查：
 
-**解决方案**:
-- 检查网络连接
-- 验证端点 URL 是否正确
-- 检查防火墙设置
+- OSS 端点是否正确
+- 网络连接是否正常
+- 防火墙规则是否允许连接
+
+```typescript
+// 检查连接设置
+console.log("Current OSS config:", {
+  provider: process.env.OSS_PROVIDER,
+  endpoint: process.env.OSS_ENDPOINT,
+  region: process.env.OSS_REGION
+});
+```
 
 ### 调试技巧
 
 #### 1. 启用详细日志
 
+通过设置环境变量启用详细日志记录：
+
+```bash
+DEBUG=true
+LOG_LEVEL=debug
+```
+
+在代码中使用详细日志：
+
 ```typescript
-// 在开发环境启用详细日志
-if (process.env.NODE_ENV === 'development') {
-  console.log('OSS Config:', JSON.stringify(config, null, 2));
-}
+import { logger } from "./utils/logger";
+
+logger.debug("OSS operation details:", { operation: "putObject", key, metadata });
 ```
 
 #### 2. 测试连接
 
+使用测试脚本验证 OSS 连接：
+
 ```typescript
 async function testOSSConnection() {
   try {
-    const provider = getDefaultOSS().getProvider();
-    const bucketName = provider.getBucketName();
-    
-    // 尝试列出根目录
-    const result = await provider.listObjects({
-      Bucket: bucketName,
-      MaxKeys: 1,
+    const config = getOSSConfig();
+    console.log("Testing connection with config:", {
+      provider: config.provider,
+      region: config.region,
+      endpoint: config.endpoint,
+      bucket: config.bucket
     });
     
-    console.log('OSS connection successful');
+    const ossManager = await createOSSManager(config);
+    
+    // 尝试列出对象
+    console.log("Listing objects with prefix 'test/'...");
+    const objects = await ossManager.listObjects("test/");
+    console.log("Connection successful! Found objects:", objects.length);
+    
+    // 尝试上传测试文件
+    console.log("Uploading test file...");
+    await ossManager.putObject("test/connection-test.txt", "Connection test successful");
+    console.log("Test file upload successful!");
+    
     return true;
   } catch (error) {
-    console.error('OSS connection failed:', error);
+    console.error("Connection test failed:", error);
     return false;
   }
 }
@@ -659,29 +728,118 @@ async function testOSSConnection() {
 
 #### 3. 验证配置
 
+验证 OSS 配置是否完整和有效：
+
 ```typescript
-function validateOSSConfig(config: OSSConfig): void {
-  if (!config.bucket) {
-    throw new Error('Bucket name is required');
+function validateOSSConfig(config: OSSConfig): { valid: boolean; errors: string[] } {
+  const errors = [];
+  
+  if (!config.provider) {
+    errors.push("Provider is required");
   }
   
-  if (config.provider === 'dogecloud') {
-    if (!config.accessKey && !process.env.DOGE_CLOUD_ACCESS_KEY) {
-      throw new Error('DogeCloud access key is required');
+  if (!config.accessKey) {
+    errors.push("Access key is required");
+  }
+  
+  if (!config.secretKey) {
+    errors.push("Secret key is required");
+  }
+  
+  // 根据提供商验证特定配置
+  if (["s3", "aliyun", "qiniu", "tencent"].includes(config.provider)) {
+    if (!config.bucket) {
+      errors.push(`Bucket is required for ${config.provider}`);
     }
   }
   
-  // 添加其他验证逻辑...
+  return {
+    valid: errors.length === 0,
+    errors
+  };
 }
 ```
 
 ## 总结
 
-新的 OSS 适配器系统提供了更好的可扩展性、类型安全性和易用性。通过遵循本指南，您应该能够：
+本指南介绍了 OSS 适配器系统的使用方法，从基本配置到高级功能。通过遵循这些实践，您可以高效地将各种对象存储服务集成到您的 Expo 更新服务器中。
 
-1. 快速设置和配置 OSS 适配器
-2. 从旧系统平滑迁移到新系统
-3. 创建自定义适配器支持新的存储服务
-4. 处理常见问题和进行故障排除
+系统的主要优点包括：
+- 统一的接口访问不同的存储服务
+- 灵活的配置选项
+- 支持多种云存储提供商
+- 可扩展的适配器架构
 
-如果您遇到任何问题或需要更多帮助，请查看源代码中的注释和测试文件，或提交 issue。
+如果您在使用过程中遇到问题，请参考故障排除部分或查看源代码以了解更多详情。
+
+---
+
+# English Version
+
+# OSS Adapter System Usage Guide
+
+[English Version](#english-version) | [中文版](#oss-适配器系统使用指南)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Basic Usage](#basic-usage)
+- [Advanced Features](#advanced-features)
+- [Custom Adapters](#custom-adapters)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+- [Conclusion](#conclusion)
+
+## Overview
+
+The OSS adapter system provides a unified interface to access various Object Storage Services (OSS), including DogeCloud, AWS S3, Aliyun OSS, Qiniu Cloud, and Tencent COS. The system uses the factory and adapter patterns, allowing developers to interact with different storage services consistently.
+
+This system is a core component of the custom Expo update server, responsible for storing and managing application update packages.
+
+## Quick Start
+
+1. Create a configuration file by copying the example
+2. Set up environment variables
+3. Initialize OSS at application startup
+4. Use OSS functionality for file operations
+
+For detailed instructions, see the Chinese version above.
+
+## Configuration
+
+The project uses `src/config/oss-config.ts` for OSS configuration. Examples for various providers are available in the `oss-config.example.ts` file.
+
+## Basic Usage
+
+After initialization, you can perform various operations through the OSS manager:
+- File operations (upload, download, check existence)
+- Update package management
+- Metadata handling
+
+## Advanced Features
+
+The system supports advanced features such as:
+- Multiple OSS instances
+- Presigned URLs
+- Batch operations
+
+## Custom Adapters
+
+You can create and register custom adapters to support additional storage services.
+
+## Best Practices
+
+Follow best practices for:
+- Environment configuration
+- Error handling
+- Performance optimization
+
+## Troubleshooting
+
+Common issues and debugging tips are provided in the Chinese version.
+
+## Conclusion
+
+This guide has introduced the OSS adapter system usage, from basic configuration to advanced features. By following these practices, you can efficiently integrate various object storage services into your Expo update server.

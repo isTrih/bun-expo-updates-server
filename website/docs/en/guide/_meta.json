@@ -1,0 +1,69 @@
+[
+  {
+    "type": "section-header",
+    "label": "Getting Started"
+  },
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Introduction"
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "Core Concepts"
+  },
+  {
+    "type": "file",
+    "name": "configuration",
+    "label": "Configuration"
+  },
+  {
+    "type": "file",
+    "name": "updates",
+    "label": "Update Management"
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "Advanced Usage"
+  },
+  {
+    "type": "file",
+    "name": "oss-adapters",
+    "label": "OSS Adapters"
+  },
+  {
+    "type": "file",
+    "name": "binary-deployment",
+    "label": "Binary Deployment & PM2"
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "References"
+  },
+  {
+    "type": "file",
+    "name": "api",
+    "label": "API Reference"
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "section-header",
+    "label": "Help"
+  },
+  {
+    "type": "file",
+    "name": "troubleshooting",
+    "label": "Troubleshooting"
+  }
+]

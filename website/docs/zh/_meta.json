@@ -1,0 +1,16 @@
+[
+  {
+    "text": "home",
+    "link": "/zh/",
+    "activeMatch": "^/zh/$"
+  },
+  {
+    "text": "guide",
+    "link": "/zh/guide/",
+    "activeMatch": "/zh/guide/"
+  },
+  {
+    "text": "下载",
+    "link": "https://github.com/isTrih/bun-expo-updates-server/releases"
+  }
+]

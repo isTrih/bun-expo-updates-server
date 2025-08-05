@@ -1,0 +1,182 @@
+# Release Workflow
+# This workflow builds and publishes releases automatically
+# TRIGGER: Only commits with message prefix 'release:' will trigger this workflow
+# VERSION: Release tag is based on version in package.json
+# ARTIFACTS: Builds for multiple platforms and packages necessary files
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.check.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for changelog generation
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Get package version and check commit message
+        id: check
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if tag for this version already exists
+          if git tag -l "v$VERSION" | grep -q .; then
+            echo "Version v$VERSION already exists as a tag. Not creating a release."
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check commit message of the latest commit
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -q -E "^release(\(.+\))?:"; then
+            echo "Commit type indicates we should make a release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "Commit type doesn't warrant a release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        if: steps.check.outputs.should_release == 'true'
+        id: changelog
+        run: |
+          # Find the most recent tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LATEST_TAG" ]; then
+            # If there are no tags, use the first commit
+            LATEST_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "Changes since $LATEST_TAG:"
+
+          # Generate changelog from commits since last tag, excluding chore and docs
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" $LATEST_TAG..HEAD | grep -v -E "^- (docs|chore|test|refactor|style|ci|build)(\(.+\))?:" || true)
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="No notable changes"
+          fi
+
+          # Escape newlines for GitHub Actions
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+
+          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
+  build-and-release:
+    needs: check-release
+    if: needs.check-release.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          [
+            bun-darwin-arm64,
+            bun-darwin-x64,
+            bun-windows-x64,
+            bun-linux-arm64,
+            bun-linux-x64,
+          ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Determine output name
+        id: output-name
+        run: |
+          VERSION=${{ needs.check-release.outputs.version }}
+          TARGET_OS=$(echo ${{ matrix.target }} | cut -d'-' -f2)
+          TARGET_ARCH=$(echo ${{ matrix.target }} | cut -d'-' -f3)
+
+          if [[ "$TARGET_OS" == "windows" ]]; then
+            echo "output_file=server.exe" >> $GITHUB_OUTPUT
+            echo "artifact_name=bun-expo-updates-server-${VERSION}-${TARGET_OS}-${TARGET_ARCH}" >> $GITHUB_OUTPUT
+          else
+            echo "output_file=server" >> $GITHUB_OUTPUT
+            echo "artifact_name=bun-expo-updates-server-${VERSION}-${TARGET_OS}-${TARGET_ARCH}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build for ${{ matrix.target }}
+        run: |
+          bun build \
+            --compile \
+            --minify \
+            --target ${{ matrix.target }} \
+            --outfile ${{ steps.output-name.outputs.output_file }} \
+            ./src/index.ts
+
+      - name: Create package directory
+        run: |
+          mkdir -p release-package/logs
+          cp ${{ steps.output-name.outputs.output_file }} release-package/
+          cp .env.example release-package/
+          cp ecosystem.config.js release-package/
+
+      - name: Create ZIP archive
+        run: |
+          cd release-package
+          zip -r ../${{ steps.output-name.outputs.artifact_name }}.zip ./*
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.output-name.outputs.artifact_name }}
+          path: ${{ steps.output-name.outputs.artifact_name }}.zip
+          retention-days: 1
+
+  create-release:
+    needs: [check-release, build-and-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.check-release.outputs.version }}
+          name: Release v${{ needs.check-release.outputs.version }}
+          body: |
+            ## Release Notes
+
+            ${{ needs.check-release.outputs.changelog }}
+          files: artifacts/**/*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+
+      - name: Create Git tag
+        run: |
+          git tag v${{ needs.check-release.outputs.version }}
+          git push origin v${{ needs.check-release.outputs.version }}

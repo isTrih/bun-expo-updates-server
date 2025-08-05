@@ -1,0 +1,16 @@
+[
+  {
+    "text": "home",
+    "link": "/en/",
+    "activeMatch": "^/en/$"
+  },
+  {
+    "text": "guide",
+    "link": "/en/guide/",
+    "activeMatch": "/en/guide/"
+  },
+  {
+    "text": "Download",
+    "link": "https://github.com/isTrih/bun-expo-updates-server/releases"
+  }
+]
