@@ -2,7 +2,7 @@
   "name": "bun-expo-updates-server",
   "description": "Bun server for Deploying Custom Expo updates",
   "author": "Trih HUA",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -20,7 +20,7 @@ export default defineConfig({
     ],
     footer: {
       message:
-        "Copyright © 2023-present isTrih Released under the MIT License.",
+        "Copyright © 2023-present isTrih Released under the GPLv3 license.",
     },
   },
   locales: [
