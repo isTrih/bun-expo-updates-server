@@ -3,6 +3,7 @@ import fs from "fs";
 import mime from "mime-types";
 import { uploadFileAsync } from "../utils/helper-oss";
 import { setupDefaultOSS } from "../utils/oss-provider/factory";
+import { initializeOSS } from "../config/oss-config.example";
 import { loggers } from "../utils/logger";
 const logger = loggers.system();
 
@@ -193,17 +194,19 @@ async function main() {
         ? "Initializing OSS manager..."
         : "正在初始化 OSS 管理器...",
     );
-    await setupDefaultOSS({
-      provider: process.env.OSS_PROVIDER
-        ? (process.env.OSS_PROVIDER as "dogecloud" | "qiniu" | "s3" | "custom")
-        : "dogecloud",
-      accessKey: process.env.OSS_ACCESS_KEY,
-      secretKey: process.env.OSS_SECRET_KEY,
-      region: process.env.OSS_REGION || "automatic",
-      bucket: process.env.OSS_BUCKET,
-      endpoint: process.env.OSS_ENDPOINT,
-      forcePathStyle: Boolean(Number(process.env.OSS_FORCE_PATH_STYLE)),
-    });
+    // await setupDefaultOSS({
+    //   provider: process.env.OSS_PROVIDER
+    //     ? (process.env.OSS_PROVIDER as "dogecloud" | "qiniu" | "s3" | "custom")
+    //     : "dogecloud",
+    //   accessKey: process.env.OSS_ACCESS_KEY,
+    //   secretKey: process.env.OSS_SECRET_KEY,
+    //   region: process.env.OSS_REGION || "automatic",
+    //   bucket: process.env.OSS_BUCKET,
+    //   endpoint: process.env.OSS_ENDPOINT,
+    //   forcePathStyle: Boolean(Number(process.env.OSS_FORCE_PATH_STYLE)),
+    // });
+    initializeOSS();
+
     logger.info(
       currentLanguage === "en-US"
         ? "OSS manager initialized successfully"
