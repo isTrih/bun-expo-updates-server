@@ -131,42 +131,48 @@ jobs:
             ./src/index.ts
           # 添加延迟，确保文件不再被锁定
           sleep 2
+      - name: Create package directory for Windows
+        if: contains(matrix.target, 'windows')
+        shell: powershell
+        run: |
+          New-Item -Path "release-package/logs" -ItemType Directory -Force
+          Start-Sleep -Seconds 5
+          # 使用 PowerShell 命令复制文件
+          Copy-Item "build-output/${{ steps.output-name.outputs.output_file }}" -Destination "release-package/" -Force
+          Copy-Item ".env.example" -Destination "release-package/" -Force
+          Copy-Item "ecosystem.config.js" -Destination "release-package/" -Force
 
-      - name: Create package directory
+      - name: Create package directory for non-Windows
+        if: "!contains(matrix.target, 'windows')"
         shell: bash
         run: |
           mkdir -p release-package/logs
-          # 对于 Windows 添加重试逻辑
-          if [[ "${{ matrix.target }}" == *"windows"* ]]; then
-            # 尝试最多5次复制
-            for i in {1..5}; do
-              if cp ${{ steps.output-name.outputs.output_file }} release-package/ 2>/dev/null; then
-                echo "Successfully copied executable file"
-                break
-              else
-                echo "Failed to copy executable, retrying in 2 seconds... (attempt $i)"
-                sleep 2
-              fi
-
-              # 如果最后一次尝试仍失败
-              if [ $i -eq 5 ]; then
-                echo "ERROR: Could not copy executable file after multiple attempts"
-                exit 1
-              fi
-            done
-          else
-            # 非 Windows 平台直接复制
-            cp ${{ steps.output-name.outputs.output_file }} release-package/
-          fi
-
-          # 复制其他必要文件
+          cp build-output/${{ steps.output-name.outputs.output_file }} release-package/
           cp .env.example release-package/
           cp ecosystem.config.js release-package/
 
-      - name: Create ZIP archive
+      - name: Create ZIP archive for Windows
+        if: contains(matrix.target, 'windows')
+        shell: powershell
+        run: |
+          Compress-Archive -Path "release-package/*" -DestinationPath "${{ steps.output-name.outputs.artifact_name }}.zip" -Force
+          # 检查是否成功创建ZIP文件
+          if (-not (Test-Path "${{ steps.output-name.outputs.artifact_name }}.zip")) {
+            Write-Error "Failed to create ZIP archive for Windows"
+            exit 1
+          }
+
+      - name: Create ZIP archive for non-Windows
+        if: "!contains(matrix.target, 'windows')"
+        shell: bash
         run: |
           cd release-package
           zip -r ../${{ steps.output-name.outputs.artifact_name }}.zip ./*
+          # 检查是否成功创建ZIP文件
+          if [ ! -f "../${{ steps.output-name.outputs.artifact_name }}.zip" ]; then
+            echo "Failed to create ZIP archive"
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
