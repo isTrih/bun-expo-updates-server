@@ -1,15 +1,129 @@
-# Elysia with Bun runtime
+# Custom Expo Updates Server & Client
 
-## Getting Started
-To get started with this template, simply paste this command into your terminal:
+This repo contains a server and client that implement the [Expo Updates protocol specification](https://docs.expo.dev/technical-specs/expo-updates-0).
+
+> [!IMPORTANT]
+> This repo exists to provide a basic demonstration of how the protocol might be translated to code. It is not guaranteed to be complete, stable, or performant enough to use as a full-fledged backend for expo-updates. Expo does not provide hands-on technical support for custom expo-updates server implementations, including what is in this repo. Issues within the expo-updates client library itself (independent of server) may be reported at https://github.com/expo/expo/issues/new/choose. Any pull requests that add new features to this repository will likely be closed; instead, feel free to fork the repository to add new features.
+
+## Why
+
+Expo provides a set of service named EAS (Expo Application Services), one of which is EAS Update which can host and serve updates for an Expo app using the [`expo-updates`](https://github.com/expo/expo/tree/main/packages/expo-updates) library.
+
+In some cases more control of how updates are sent to an app may be needed, and one option is to implement a custom updates server that adheres to the specification in order to serve update manifests and assets. This repo contains an example server implementation of the specification and a client app configured to use the example server.
+
+## Getting started
+
+### Updates overview
+
+To understand this repo, it's important to understand some terminology around updates:
+
+- **Runtime version**: Type: String. Runtime version specifies the version of the underlying native code your app is running. You'll want to update the runtime version of an update when it relies on new or changed native code, like when you update the Expo SDK, or add in any native modules into your apps. Failing to update an update's runtime version will cause your end-user's app to crash if the update relies on native code the end-user is not running.
+- **Platform**: Type: "ios" or "android". Specifies which platform to to provide an update.
+- **Manifest**: Described in the protocol. The manifest is an object that describes assets and other details that an Expo app needs to know to load an update.
+
+### How the `expo-update-server` works
+
+The flow for creating an update is as follows:
+
+1. Configure and build a "release" version of an app, then run it on a simulator or deploy to an app store.
+2. Run the project locally, make changes, then export the app as an update.
+3. In the server repo, we'll copy the update made in #2 to the **expo-update-server/updates** directory, under a corresponding runtime version sub-directory.
+4. In the "release" app, force close and reopen the app to make a request for an update from the custom update server. The server will return a manifest that matches the requests platform and runtime version.
+5. Once the "release" app receives the manifest, it will then make requests for each asset, which will also be served from this server.
+6. Once the app has all the required assets it needs from the server, it will load the update.
+
+## The setup
+
+Note: The app is configured to load updates from the server running at http://localhost:3000. If you prefer to load them from a different base URL (for example, in an Android emulator):
+1. Update `.env.local` in the server.
+2. Update `updates.url` in `app.json` and re-run the build steps below.
+
+### Create a "release" app
+
+The example Expo project configured for the server is located in **/expo-updates-client**.
+
+#### iOS
+
+Run `yarn` and `yarn ios --configuration Release`.
+
+#### Android
+
+Run `yarn` and then run `yarn android --variant release`.
+
+### Make a change
+
+Let's make a change to the project in /expo-updates-client that we'll want to push as an over-the-air update from our custom server to the "release" app. `cd` in to **/expo-updates-client**, then make a change in **App.js**.
+
+Once you've made a change you're happy with, inside of **/expo-updates-server**, run `yarn expo-publish`. Under the hood, this script runs `npx expo export` in the client, copies the exported app to the server, and then copies the Expo config to the server as well.
+
+### Send an update
+
+Now we're ready to run the update server. Run `yarn dev` in the server folder of this repo to start the server.
+
+In the simulator running the "release" version of the app, force close the app and re-open it. It should make a request to /api/manifest, then requests to /api/assets. After the app loads, it should show any changes you made locally.
+
+## Using Docker (MacOS ARM to AMD64 Linux)
+
+### 使用 Docker 构建和部署
+
+本项目支持通过 Docker 进行构建和部署，特别适合在 MacOS ARM（Apple Silicon）环境下构建 AMD64 Linux 可用的镜像。
+
+### 构建 Docker 镜像
+
+我们提供了一个构建脚本，可以轻松创建跨平台 Docker 镜像：
+
 ```bash
-bun create elysia ./elysia-example
+# 赋予脚本执行权限
+chmod +x build-docker.sh
+
+# 运行构建脚本
+./build-docker.sh
 ```
 
-## Development
-To start the development server run:
+构建脚本会引导您完成以下步骤：
+1. 检查 Docker buildx 环境
+2. 创建或使用多平台构建器
+3. 构建 AMD64 架构的 Docker 镜像
+4. 可选择是否推送到 Docker Hub
+
+### 使用 Docker Compose 运行
+
+我们还提供了 `docker-compose.yml` 文件，可以更便捷地配置和运行服务：
+
+1. 创建环境变量文件：
 ```bash
-bun run dev
+cp .env.example .env
 ```
 
-Open http://localhost:3000/ with your browser to see the result.
+2. 编辑 `.env` 文件，填入您的 OSS 配置信息：
+```
+OSS_ACCESS_KEY=你的访问密钥
+OSS_SECRET_KEY=你的秘密密钥
+OSS_BUCKET=你的桶名称
+HOSTNAME=http://your-server-address:3000
+```
+
+3. 启动服务：
+```bash
+docker-compose up -d
+```
+
+### 手动运行 Docker 镜像
+
+如果您不想使用 Docker Compose，也可以直接运行构建好的镜像：
+
+```bash
+docker run -d -p 3000:3000 \
+  -e OSS_ACCESS_KEY=你的访问密钥 \
+  -e OSS_SECRET_KEY=你的秘密密钥 \
+  -e OSS_BUCKET=你的桶名称 \
+  -e HOSTNAME=http://your-server-address:3000 \
+  --name expo-updates-server \
+  expo-updates-server:latest
+```
+
+## About this server
+
+This server was created with NextJS. You can find the API endpoints in **pages/api/manifest.js** and **pages/api/assets.js**.
+
+The code signing keys and certificates were generated using https://github.com/expo/code-signing-certificates.

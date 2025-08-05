@@ -1,15 +1,30 @@
 {
   "name": "bun-expo-updates-server",
+  "description": "Bun server for Deploying Custom Expo updates",
+  "author": "Trih HUA",
+  "license": "MIT",
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "up": "./src/scripts/export-client.sh"
   },
   "dependencies": {
-    "elysia": "latest"
+    "@aws-sdk/client-s3": "^3.857.0",
+    "@aws-sdk/s3-request-presigner": "^3.859.0",
+    "@elysiajs/cron": "^1.3.0",
+    "@expo/config": "^11.0.13",
+    "@types/mime-types": "^3.0.1",
+    "elysia": "latest",
+    "logixlysia": "^5.1.0",
+    "mime": "^4.0.7",
+    "mime-types": "^3.0.1",
+    "nullthrows": "^1.1.1",
+    "structured-headers": "^2.0.2"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "file-type": "^21.0.0"
   },
   "module": "src/index.js"
 }

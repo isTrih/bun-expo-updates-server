@@ -1,0 +1,4 @@
+# updates/.gitignore
+
+*
+!.gitignore
