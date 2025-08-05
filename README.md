@@ -10,9 +10,6 @@
   <a href="https://bun-expo-updates.chaozj.com/en/"><img src="https://img.shields.io/badge/Documentation-Website-blue?style=for-the-badge" alt="Documentation"/></a>
 </p>
 
-<p align="center">
-  <a href="https://afdian.tv/a/istrih"><img width="200" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="Sponsor Me"></a>
-</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun"/>
@@ -21,6 +18,7 @@
 </p>
 
 <p align="center">
+    <a href="https://afdian.tv/a/istrih"><img width="200" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="Sponsor Me"></a>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"/>
   <img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" alt="Maintained"/>
