@@ -12,13 +12,13 @@
 
 
 <p align="center">
+    <a href="https://afdian.tv/a/istrih"><img width="100" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="Sponsor Me"></a>
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun"/>
   <img src="https://img.shields.io/badge/TypeScript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/expo-1C1E24?style=for-the-badge&logo=expo&logoColor=#D04A37" alt="Expo"/>
 </p>
 
 <p align="center">
-    <a href="https://afdian.tv/a/istrih"><img width="100" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="Sponsor Me"></a>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"/>
   <img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" alt="Maintained"/>
