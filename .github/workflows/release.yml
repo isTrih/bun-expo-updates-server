@@ -129,11 +129,37 @@ jobs:
             --target ${{ matrix.target }} \
             --outfile ${{ steps.output-name.outputs.output_file }} \
             ./src/index.ts
+          # 添加延迟，确保文件不再被锁定
+          sleep 2
 
       - name: Create package directory
+        shell: bash
         run: |
           mkdir -p release-package/logs
-          cp ${{ steps.output-name.outputs.output_file }} release-package/
+          # 对于 Windows 添加重试逻辑
+          if [[ "${{ matrix.target }}" == *"windows"* ]]; then
+            # 尝试最多5次复制
+            for i in {1..5}; do
+              if cp ${{ steps.output-name.outputs.output_file }} release-package/ 2>/dev/null; then
+                echo "Successfully copied executable file"
+                break
+              else
+                echo "Failed to copy executable, retrying in 2 seconds... (attempt $i)"
+                sleep 2
+              fi
+
+              # 如果最后一次尝试仍失败
+              if [ $i -eq 5 ]; then
+                echo "ERROR: Could not copy executable file after multiple attempts"
+                exit 1
+              fi
+            done
+          else
+            # 非 Windows 平台直接复制
+            cp ${{ steps.output-name.outputs.output_file }} release-package/
+          fi
+
+          # 复制其他必要文件
           cp .env.example release-package/
           cp ecosystem.config.js release-package/
 
