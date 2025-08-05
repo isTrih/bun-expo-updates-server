@@ -123,50 +123,18 @@ jobs:
             --target ${{ matrix.target }} \
             --outfile ${{ steps.output-name.outputs.output_file }} \
             ./src/index.ts
-          # 添加延迟，确保文件不再被锁定
-          sleep 2
-      - name: Create package directory for Windows
-        if: contains(matrix.target, 'windows')
-        shell: powershell
-        run: |
-          New-Item -Path "release-package/logs" -ItemType Directory -Force
-          Start-Sleep -Seconds 5
-          # 使用 PowerShell 命令复制文件
-          Copy-Item "build-output/${{ steps.output-name.outputs.output_file }}" -Destination "release-package/" -Force
-          Copy-Item ".env.example" -Destination "release-package/" -Force
-          Copy-Item "ecosystem.config.js" -Destination "release-package/" -Force
 
-      - name: Create package directory for non-Windows
-        if: "!contains(matrix.target, 'windows')"
-        shell: bash
+      - name: Create package directory
         run: |
           mkdir -p release-package/logs
-          cp build-output/${{ steps.output-name.outputs.output_file }} release-package/
+          cp ${{ steps.output-name.outputs.output_file }} release-package/
           cp .env.example release-package/
           cp ecosystem.config.js release-package/
 
-      - name: Create ZIP archive for Windows
-        if: contains(matrix.target, 'windows')
-        shell: powershell
-        run: |
-          Compress-Archive -Path "release-package/*" -DestinationPath "${{ steps.output-name.outputs.artifact_name }}.zip" -Force
-          # 检查是否成功创建ZIP文件
-          if (-not (Test-Path "${{ steps.output-name.outputs.artifact_name }}.zip")) {
-            Write-Error "Failed to create ZIP archive for Windows"
-            exit 1
-          }
-
-      - name: Create ZIP archive for non-Windows
-        if: "!contains(matrix.target, 'windows')"
-        shell: bash
+      - name: Create ZIP archive
         run: |
           cd release-package
           zip -r ../${{ steps.output-name.outputs.artifact_name }}.zip ./*
-          # 检查是否成功创建ZIP文件
-          if [ ! -f "../${{ steps.output-name.outputs.artifact_name }}.zip" ]; then
-            echo "Failed to create ZIP archive"
-            exit 1
-          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
