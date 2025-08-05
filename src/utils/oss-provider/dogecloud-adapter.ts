@@ -12,12 +12,21 @@ import {
   OSSHeadObjectResult,
 } from "./types";
 
-import { redis } from "bun";
+import { createMemoryCache } from "../memory-cache";
 import { loggers, bilingualMsg } from "../logger";
+import {
+  CacheDomain,
+  getCache,
+  DEFAULT_CACHE_TTL,
+} from "../../config/cache-config";
 
 // 使用通用日志工具
 // Using common logging utility
 const logger = loggers.oss("DogeCloud");
+
+// 使用OSS缓存域的缓存实例
+// Use the cache instance for the OSS domain
+const ossCache = getCache(CacheDomain.OSS);
 
 async function generateHmacSha1(secret: string, data: string): Promise<string> {
   const enc = new TextEncoder();
@@ -84,17 +93,18 @@ export class DogeCloudAdapter implements IOSSProvider {
     try {
       logger.debug(
         bilingualMsg(
-          `检查Redis缓存: ${cacheDataKey}`,
-          `Checking Redis cache: ${cacheDataKey}`,
+          `检查内存缓存: ${cacheDataKey}`,
+          `Checking memory cache: ${cacheDataKey}`,
         ),
       );
-      const cacheData = await redis.get(cacheDataKey);
+      const cacheData = ossCache.get<string>(cacheDataKey);
 
       // 检查缓存是否存在以及是否过期
       // Check if cache exists and if it's expired
       if (cacheData) {
         const nowTime = Date.now();
-        const parsedData = JSON.parse(cacheData);
+        const parsedData =
+          typeof cacheData === "string" ? JSON.parse(cacheData) : cacheData;
         const cacheDataExpires = parsedData.ExpiredAt * 1000;
         if (nowTime > cacheDataExpires) {
           logger.debug(
@@ -104,12 +114,12 @@ export class DogeCloudAdapter implements IOSSProvider {
             ),
           );
           try {
-            await redis.del(cacheDataKey);
-          } catch (redisError) {
+            ossCache.delete(cacheDataKey);
+          } catch (cacheError) {
             logger.warn(
               bilingualMsg(
-                `删除过期缓存失败，但将继续${redisError}`,
-                `Failed to delete expired cache, but will continue${redisError}`,
+                `删除过期缓存失败，但将继续${cacheError}`,
+                `Failed to delete expired cache, but will continue${cacheError}`,
               ),
             );
           }
@@ -129,8 +139,8 @@ export class DogeCloudAdapter implements IOSSProvider {
       } else {
         logger.debug(
           bilingualMsg(
-            "缓存不存在或Redis不可用，获取新凭证",
-            "Cache doesn't exist or Redis unavailable, getting new credentials",
+            "缓存不存在，获取新凭证",
+            "Cache doesn't exist, getting new credentials",
           ),
         );
         data = await this.getTemporaryCredentials();
@@ -141,27 +151,27 @@ export class DogeCloudAdapter implements IOSSProvider {
       try {
         logger.debug(
           bilingualMsg(
-            `更新Redis缓存，有效期: 7000秒`,
-            `Updating Redis cache, validity: 7000 seconds`,
+            `更新内存缓存，有效期: 7000秒`,
+            `Updating memory cache, validity: 7000 seconds`,
           ),
         );
-        await redis.set(cacheDataKey, JSON.stringify(data), "EX", 7000);
-      } catch (redisError) {
+        ossCache.set(cacheDataKey, data, 7000 * 1000); // 转换为毫秒
+      } catch (cacheError) {
         logger.error(
           bilingualMsg(
-            `更新Redis缓存失败，但将继续使用凭证`,
-            `Failed to update Redis cache, but will continue using credentials`,
+            `更新内存缓存失败，但将继续使用凭证`,
+            `Failed to update memory cache, but will continue using credentials`,
           ),
-          redisError,
+          cacheError,
         );
       }
     } catch (error) {
-      // Redis可能不可用，直接获取临时凭证
-      // Redis might be unavailable, directly get temporary credentials
+      // 缓存访问失败，直接获取临时凭证
+      // Cache access failed, directly get temporary credentials
       logger.error(
         bilingualMsg(
-          `Redis缓存访问失败，直接获取临时凭证`,
-          `Redis cache access failed, directly getting temporary credentials`,
+          `内存缓存访问失败，直接获取临时凭证`,
+          `Memory cache access failed, directly getting temporary credentials`,
         ),
         error,
       );

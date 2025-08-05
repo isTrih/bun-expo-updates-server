@@ -3,7 +3,7 @@
   "description": "Bun server for Deploying Custom Expo updates",
   "author": "Trih HUA",
   "license": "GPL-3.0-or-later",
-  "version": "1.0.50",
+  "version": "1.0.51",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",

@@ -8,93 +8,18 @@ import path from "path";
 import { IOSSProvider, OSSConfig } from "./oss-provider/types";
 export class NoUpdateAvailableError extends Error {}
 
-// 缓存管理器接口
-// Cache manager interface
-interface ICacheItem<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
+// 从memory-cache模块导入缓存功能
+// Import cache functionality from memory-cache module
+import { createMemoryCache, MemoryCache } from "./memory-cache";
 
 /**
- * 简单的内存缓存实现
+ * 创建全局OSS缓存实例
  * 用于缓存OSS请求结果，减少重复请求，提高响应速度
  *
- * Simple memory cache implementation
+ * Create global OSS cache instance
  * Used to cache OSS request results, reduce repeated requests, and improve response speed
  */
-class MemoryCache {
-  private cache: Record<string, ICacheItem<any>> = {};
-
-  /**
-   * 获取缓存项
-   * @param key 缓存键
-   * @returns 缓存的数据或undefined（如果不存在或已过期）
-   *
-   * Get cached item
-   * @param key Cache key
-   * @returns Cached data or undefined (if it doesn't exist or has expired)
-   */
-  get<T>(key: string): T | undefined {
-    const item = this.cache[key];
-    if (!item) return undefined;
-
-    // 检查缓存是否过期
-    // Check if cache has expired
-    const now = Date.now();
-    if (now - item.timestamp > item.ttl) {
-      // 缓存已过期，删除并返回undefined
-      // Cache has expired, delete and return undefined
-      delete this.cache[key];
-      return undefined;
-    }
-
-    return item.data;
-  }
-
-  /**
-   * 设置缓存项
-   * @param key 缓存键
-   * @param data 要缓存的数据
-   * @param ttl 生存时间（毫秒），默认5分钟
-   *
-   * Set cache item
-   * @param key Cache key
-   * @param data Data to be cached
-   * @param ttl Time to live (milliseconds), default 5 minutes
-   */
-  set<T>(key: string, data: T, ttl: number = 5 * 60 * 1000): void {
-    this.cache[key] = {
-      data,
-      timestamp: Date.now(),
-      ttl,
-    };
-  }
-
-  /**
-   * 清除指定的缓存项
-   * @param key 缓存键
-   *
-   * Clear specified cache item
-   * @param key Cache key
-   */
-  delete(key: string): void {
-    delete this.cache[key];
-  }
-
-  /**
-   * 清除所有缓存
-   *
-   * Clear all cache
-   */
-  clear(): void {
-    this.cache = {};
-  }
-}
-
-// 创建全局缓存实例
-// Create global cache instance
-const ossCache = new MemoryCache();
+const ossCache = createMemoryCache();
 
 // 创建哈希（例如用于 SHA256 或 MD5），支持指定编码格式
 // Create hash (e.g., for SHA256 or MD5), supporting specified encoding format
@@ -653,14 +578,14 @@ export async function generatePresignedUrlAsync(
  */
 export function clearOSSCache(prefix?: string): void {
   if (prefix) {
-    // 遍历缓存并删除匹配前缀的项（需要访问私有成员，此处仅作为示例）
-    // 实际上我们无法直接访问ossCache.cache，这里只是概念性的展示
-    // Traverse the cache and delete items matching the prefix (requires accessing private members, only as an example here)
-    // In reality, we cannot directly access ossCache.cache, this is just a conceptual demonstration
+    // 获取所有键并清除匹配前缀的缓存项
+    // Get all keys and clear cache items matching the prefix
+    const keys = ossCache.getKeys();
+    const matchingKeys = keys.filter((key) => key.startsWith(prefix));
     console.log(
-      `清除前缀为 ${prefix} 的缓存 / Clearing cache with prefix ${prefix}`,
+      `清除前缀为 ${prefix} 的缓存，匹配到 ${matchingKeys.length} 项 / Clearing cache with prefix ${prefix}, matched ${matchingKeys.length} items`,
     );
-    ossCache.clear();
+    matchingKeys.forEach((key) => ossCache.delete(key));
   } else {
     // 清除所有缓存
     // Clear all cache
@@ -674,8 +599,14 @@ export function clearOSSCache(prefix?: string): void {
  *
  * @returns 缓存状态信息 / Cache status information
  */
-export function getOSSCacheStatus(): { active: boolean } {
+export function getOSSCacheStatus(): {
+  active: boolean;
+  count: number;
+  keys: string[];
+} {
+  const status = ossCache.getStatus();
   return {
     active: true,
+    ...status,
   };
 }

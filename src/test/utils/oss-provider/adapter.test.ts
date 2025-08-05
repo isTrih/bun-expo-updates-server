@@ -10,14 +10,7 @@ import { DogeCloudAdapter } from "../../../utils/oss-provider/dogecloud-adapter"
 import { S3Adapter } from "../../../utils/oss-provider/s3-adapter";
 import type { IOSSProvider } from "../../../utils/oss-provider/types";
 
-// Mock redis for testing
-mock.module("bun", () => ({
-  redis: {
-    get: mock().mockResolvedValue(null),
-    set: mock().mockResolvedValue("OK"),
-    del: mock().mockResolvedValue(1),
-  },
-}));
+// 不再需要模拟Redis，因为我们使用了内存缓存模块
 
 // Mock environment variables
 const originalEnv = process.env;

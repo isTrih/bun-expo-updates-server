@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { manifest } from "./modules/manifest";
 import logixlysia from "logixlysia";
 import { setupDefaultOSS } from "./utils/oss-provider/factory";
@@ -20,7 +20,8 @@ const app = new Elysia({
   .use(
     logixlysia({
       config: {
-        showStartupMessage: false,
+        showStartupMessage: true,
+        startupMessageFormat: "simple",
         useColors: true,
         timestamp: {
           translateTime: "yyyy-mm-dd HH:MM:ss",
@@ -35,4 +36,7 @@ const app = new Elysia({
   .use(manifest);
 const port = Number(process.env.port || 3000);
 
-app.listen(port);
+app.listen({
+  hostname: "0.0.0.0",
+  port: port,
+});

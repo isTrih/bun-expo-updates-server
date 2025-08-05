@@ -11,6 +11,8 @@
   <a href="https://bun-expo-updates.chaozj.com/"><img src="https://img.shields.io/badge/文档网站-Documentation-blue?style=for-the-badge" alt="Documentation"/></a>
 </p>
 
+
+
 <p align="center">
     <a href="https://afdian.tv/a/istrih"><img width="100" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="赞助我"></a>
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun"/>
@@ -26,6 +28,11 @@
 
 这个仓库包含一个实现了 `Expo Updates` 协议规范的 `BUN` 服务器。
 
+## 快速部署
+<p align="left">
+  <a href="https://app.rainyun.com/apps/rca/store/5/istrih_"><img src="https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-cn.svg" alt="在雨云上部署"/></a>
+</p>
+
 > [!IMPORTANT]
 > 本仓库提供了协议如何转换为代码的基本演示。不保证其完整性、稳定性或性能足以用作`expo-updates`的完整后端。
 > 我不为此类自定义`expo-updates`服务器实现提供技术支持。
@@ -40,6 +47,7 @@
 - Web 框架: Elysia
 - 开发语言: TypeScript
 - OSS: 多吉云对象存储（S3协议）
+- 缓存: 内存缓存（不需要Redis）
 
 ## 项目结构
 ```bash
@@ -99,16 +107,12 @@ bun-expo-updates-server/
    创建一个 `.env` 文件并配置以下变量:
 
    ```bash
-    # Redis配置 | Redis Configuration
-    # 格式 Format: redis://password@localhost:6379
-    REDIS_URL=redis://localhost:6379
-
     # 日志设置 | Log Settings
     # 是否开启调试日志 | Enable debug logs
     DEBUG=true
     # 日志语言设置 | Log language setting (zh_CN/en_US)
     LOG_LANGUAGE=zh_CN
-
+   
     # 对象存储服务配置 | Object Storage Service Configuration
     # OSS提供商 | OSS provider
     OSS_PROVIDER=your_oss_provider
@@ -124,19 +128,19 @@ bun-expo-updates-server/
     # OSS_BUCKET=your_bucket
     # OSS端点 | OSS endpoint
     # OSS_ENDPOINT=your_endpoint
-
+   
     # 客户端项目路径 | Client Project Path
     # 客户端项目的本地路径 | Local path to the client project
     CLIENT_PROJECT_PATH=/path/to/your/client/project
-
+   
     # 私钥路径配置 | Private Key Path Configuration
     # 用于代码签名的私钥路径 | Path to the private key for code signing
     PRIVATE_KEY_PATH=code-sign-keys/private-key.pem
-
+   
     # 服务端口配置 | Server Port Configuration
     # 服务器监听的端口 | Port on which the server listens
     port=3001
-
+   
     # 更新资源下载地址(OSS或CDN) | Update Resource Download URL (OSS or CDN)
     # 更新资源的基础URL | Base URL for update resources
     HOSTNAME=https://your-update-domain.com
@@ -148,7 +152,7 @@ bun-expo-updates-server/
     ```bash
     bun install
     # 构建项目
-
+   
     # 根据您的服务器架构选择合适的 target
     # 例如: bun-linux-x64
     bun build \
@@ -193,51 +197,47 @@ bun-expo-updates-server/
         name: "bun-updates",
         script: "./server",
         env: {
-          // Redis配置 | Redis Configuration
-          // 格式 Format: redis://password@localhost:6379
-          "REDIS_URL": "redis://localhost:6379",
-
           // 日志设置 | Log Settings
           // 是否开启调试日志 | Enable debug logs
           "DEBUG": "true",
-
+   
           // 日志语言设置 | Log language setting (zh_CN/en_US)
           "LOG_LANGUAGE": "zh_CN",
-
+   
           // 对象存储服务配置 | Object Storage Service Configuration
           // OSS提供商 | OSS provider
           "OSS_PROVIDER": "your_oss_provider",
-
+   
           // OSS访问密钥 | OSS access key
           "OSS_ACCESS_KEY": "your_access_key",
-
+   
           // OSS密钥 | OSS secret key
           "OSS_SECRET_KEY": "your_secret_key",
-
+   
           // 是否强制使用路径样式 (0 false, 1 true) | Force path style (0 false, 1 true)
           "OSS_FORCE_PATH_STYLE": "0",
-
+   
           // OSS区域 | OSS region
           // "OSS_REGION": "your_region",
-
+   
           // OSS存储桶名称 | OSS bucket name
           // "OSS_BUCKET": "your_bucket",
-
+   
           // OSS端点 | OSS endpoint
           // "OSS_ENDPOINT": "your_endpoint",
-
+   
           // 客户端项目路径 | Client Project Path
           // 客户端项目的本地路径 | Local path to the client project
           "CLIENT_PROJECT_PATH": "/path/to/your/client/project",
-
+   
           // 私钥路径配置 | Private Key Path Configuration
           // 用于代码签名的私钥路径 | Path to the private key for code signing
           "PRIVATE_KEY_PATH": "code-sign-keys/private-key.pem",
-
+   
           // 服务端口配置 | Server Port Configuration
           // 服务器监听的端口 | Port on which the server listens
           "port": "3001",
-
+   
           // 更新资源下载地址(OSS或CDN) | Update Resource Download URL (OSS or CDN)
           // 更新资源的基础URL | Base URL for update resources
           "HOSTNAME": "https://your-update-domain.com"
@@ -257,13 +257,13 @@ bun-expo-updates-server/
     ```bash
     # 查看所有进程状态
     pm2 list
-
+   
     # 停止服务器
     pm2 stop bun-updates
-
+   
     # 重启服务器
     pm2 restart bun-updates
-
+   
     # 设置服务器开机自启动
     pm2 startup
     pm2 save
@@ -290,7 +290,7 @@ bun-expo-updates-server/
    ```bash
    # 导出 Expo 客户端
    ./src/scripts/export-client.sh
-
+   
    # 上传更新到对象存储
    bun run src/scripts/uploadUpdatesToOSS.ts
    ```
@@ -330,6 +330,73 @@ bun-expo-updates-server/
 - 代码签名验证
 - 对象存储（OSS）集成
 - 日志记录
+
+## Docker 部署
+
+您也可以使用 Docker 部署此服务器：
+
+### 使用预构建的 Docker 镜像
+
+```bash
+docker pull istrih/bun-expo-updates-server:latest
+
+docker run -p 3000:3000 \
+  -e OSS_PROVIDER=your_oss_provider \
+  -e OSS_ACCESS_KEY=your_access_key \
+  -e OSS_SECRET_KEY=your_secret_key \
+  -e DEBUG=true \
+  -e LOG_LANGUAGE=zh_CN \
+  -e HOSTNAME=https://your-update-domain.com \
+  istrih/bun-expo-updates-server:latest
+```
+
+### 构建自己的 Docker 镜像
+
+1. 克隆仓库
+```bash
+git clone https://github.com/yourusername/bun-expo-updates-server.git
+cd bun-expo-updates-server
+```
+
+2. 构建 Docker 镜像
+```bash
+docker build -t bun-expo-updates-server .
+```
+
+3. 运行容器
+```bash
+docker run -p 3000:3000 \
+  -e OSS_PROVIDER=your_oss_provider \
+  -e OSS_ACCESS_KEY=your_access_key \
+  -e OSS_SECRET_KEY=your_secret_key \
+  bun-expo-updates-server
+```
+
+### Docker Compose
+
+创建一个 `docker-compose.yml` 文件：
+
+```yaml
+version: '3'
+services:
+  updates-server:
+    image: istrih/bun-expo-updates-server:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - OSS_PROVIDER=your_oss_provider
+      - OSS_ACCESS_KEY=your_access_key
+      - OSS_SECRET_KEY=your_secret_key
+      - DEBUG=true
+      - LOG_LANGUAGE=zh_CN
+      - HOSTNAME=https://your-update-domain.com
+    restart: unless-stopped
+```
+
+然后运行：
+```bash
+docker-compose up -d
+```
 
 ## 许可证
 本项目使用 GPL-3.0-or-later 许可证。

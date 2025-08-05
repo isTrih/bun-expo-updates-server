@@ -10,7 +10,6 @@
   <a href="https://bun-expo-updates.chaozj.com/en/"><img src="https://img.shields.io/badge/Documentation-Website-blue?style=for-the-badge" alt="Documentation"/></a>
 </p>
 
-
 <p align="center">
     <a href="https://afdian.tv/a/istrih"><img width="100" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="Sponsor Me"></a>
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun"/>
@@ -26,6 +25,11 @@
 
 This repository contains a `BUN` server that implements the `Expo Updates` protocol specification.
 
+## QUICK DEPlOYMENT
+<p align="left">
+  <a href="https://app.rainyun.com/apps/rca/store/5/istrih_"><img src="https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-en.svg" alt="Deploy on RainyCloud"/></a>
+</p>
+
 > [!IMPORTANT]
 > This repository provides a basic demonstration of how the protocol can be converted into code. There is no guarantee that it is complete, stable, or performant enough to be used as a complete backend for `expo-updates`.
 > I do not provide technical support for such custom `expo-updates` server implementations.
@@ -40,6 +44,7 @@ In some cases, such as ~~being unable to afford EAS services~~ or having your ma
 - Web Framework: Elysia
 - Development Language: TypeScript
 - OSS: Dogecloud Object Storage (S3 protocol)
+- Cache: In-memory cache (no Redis required)
 
 ## Project Structure
 ```bash
@@ -99,10 +104,6 @@ bun-expo-updates-server/
    Create a `.env` file and configure the following variables:
 
    ```bash
-    # Redis Configuration
-    # Format: redis://password@localhost:6379
-    REDIS_URL=redis://localhost:6379
-
     # Log Settings
     # Enable debug logs
     DEBUG=true
@@ -193,10 +194,6 @@ bun-expo-updates-server/
         name: "bun-updates",
         script: "./server",
         env: {
-          // Redis Configuration
-          // Format: redis://password@localhost:6379
-          "REDIS_URL": "redis://localhost:6379",
-
           // Log Settings
           // Enable debug logs
           "DEBUG": "true",
@@ -314,5 +311,24 @@ The server supports the following features:
 - Object Storage (OSS) integration
 - Logging
 
-## License
+## Docker Deployment
+
+You can also deploy this server using Docker:
+
+### Using Pre-built Docker Image
+
+```bash
+docker pull istrih/bun-expo-updates-server:latest
+
+docker run -p 3000:3000 \
+  -e OSS_PROVIDER=your_oss_provider \
+  -e OSS_ACCESS_KEY=your_access_key \
+  -e OSS_SECRET_KEY=your_secret_key \
+  -e DEBUG=true \
+  -e LOG_LANGUAGE=en_US \
+  -e HOSTNAME=https://your-update-domain.com \
+  istrih/bun-expo-updates-server:latest
+```
+
+### Builnse
 This project is licensed under the GPL-3.0-or-later License.
