@@ -27,7 +27,7 @@ This repository contains a `BUN` server that implements the `Expo Updates` proto
 
 ## QUICK DEPlOYMENT
 <p align="left">
-  <a href="https://app.rainyun.com/apps/rca/store/5/istrih_"><img src="https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-en.svg" alt="Deploy on RainyCloud"/></a>
+  <a href="https://app.rainyun.com/apps/rca/store/6869/istrih_"><img src="https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-en.svg" alt="Deploy on RainyCloud"/></a>
 </p>
 
 > [!IMPORTANT]

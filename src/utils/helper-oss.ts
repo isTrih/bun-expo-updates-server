@@ -89,7 +89,7 @@ export async function getLatestUpdateBundlePathForRuntimeVersionAsync(
 
   const result = `${prefix}${folders[0]}`;
 
-  // 缓存结果，设置缓存时间为10分钟（更新包路径可能会变更，不宜缓存太久）
+  // 缓存结果，设置缓存时间为3分钟（更新包路径可能会变更，不宜缓存太久）
   // Cache the result, set cache time to 3 minutes (update package paths may change, should not be cached too long)
   ossCache.set(cacheKey, result, 3 * 60 * 1000);
 

@@ -30,7 +30,7 @@
 
 ## 快速部署
 <p align="left">
-  <a href="https://app.rainyun.com/apps/rca/store/5/istrih_"><img src="https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-cn.svg" alt="在雨云上部署"/></a>
+  <a href="https://app.rainyun.com/apps/rca/store/6869/istrih_"><img src="https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-cn.svg" alt="在雨云上部署"/></a>
 </p>
 
 > [!IMPORTANT]
@@ -112,7 +112,7 @@ bun-expo-updates-server/
     DEBUG=true
     # 日志语言设置 | Log language setting (zh_CN/en_US)
     LOG_LANGUAGE=zh_CN
-   
+
     # 对象存储服务配置 | Object Storage Service Configuration
     # OSS提供商 | OSS provider
     OSS_PROVIDER=your_oss_provider
@@ -128,19 +128,19 @@ bun-expo-updates-server/
     # OSS_BUCKET=your_bucket
     # OSS端点 | OSS endpoint
     # OSS_ENDPOINT=your_endpoint
-   
+
     # 客户端项目路径 | Client Project Path
     # 客户端项目的本地路径 | Local path to the client project
     CLIENT_PROJECT_PATH=/path/to/your/client/project
-   
+
     # 私钥路径配置 | Private Key Path Configuration
     # 用于代码签名的私钥路径 | Path to the private key for code signing
     PRIVATE_KEY_PATH=code-sign-keys/private-key.pem
-   
+
     # 服务端口配置 | Server Port Configuration
     # 服务器监听的端口 | Port on which the server listens
     port=3001
-   
+
     # 更新资源下载地址(OSS或CDN) | Update Resource Download URL (OSS or CDN)
     # 更新资源的基础URL | Base URL for update resources
     HOSTNAME=https://your-update-domain.com
@@ -152,7 +152,7 @@ bun-expo-updates-server/
     ```bash
     bun install
     # 构建项目
-   
+
     # 根据您的服务器架构选择合适的 target
     # 例如: bun-linux-x64
     bun build \
@@ -200,44 +200,44 @@ bun-expo-updates-server/
           // 日志设置 | Log Settings
           // 是否开启调试日志 | Enable debug logs
           "DEBUG": "true",
-   
+
           // 日志语言设置 | Log language setting (zh_CN/en_US)
           "LOG_LANGUAGE": "zh_CN",
-   
+
           // 对象存储服务配置 | Object Storage Service Configuration
           // OSS提供商 | OSS provider
           "OSS_PROVIDER": "your_oss_provider",
-   
+
           // OSS访问密钥 | OSS access key
           "OSS_ACCESS_KEY": "your_access_key",
-   
+
           // OSS密钥 | OSS secret key
           "OSS_SECRET_KEY": "your_secret_key",
-   
+
           // 是否强制使用路径样式 (0 false, 1 true) | Force path style (0 false, 1 true)
           "OSS_FORCE_PATH_STYLE": "0",
-   
+
           // OSS区域 | OSS region
           // "OSS_REGION": "your_region",
-   
+
           // OSS存储桶名称 | OSS bucket name
           // "OSS_BUCKET": "your_bucket",
-   
+
           // OSS端点 | OSS endpoint
           // "OSS_ENDPOINT": "your_endpoint",
-   
+
           // 客户端项目路径 | Client Project Path
           // 客户端项目的本地路径 | Local path to the client project
           "CLIENT_PROJECT_PATH": "/path/to/your/client/project",
-   
+
           // 私钥路径配置 | Private Key Path Configuration
           // 用于代码签名的私钥路径 | Path to the private key for code signing
           "PRIVATE_KEY_PATH": "code-sign-keys/private-key.pem",
-   
+
           // 服务端口配置 | Server Port Configuration
           // 服务器监听的端口 | Port on which the server listens
           "port": "3001",
-   
+
           // 更新资源下载地址(OSS或CDN) | Update Resource Download URL (OSS or CDN)
           // 更新资源的基础URL | Base URL for update resources
           "HOSTNAME": "https://your-update-domain.com"
@@ -257,13 +257,13 @@ bun-expo-updates-server/
     ```bash
     # 查看所有进程状态
     pm2 list
-   
+
     # 停止服务器
     pm2 stop bun-updates
-   
+
     # 重启服务器
     pm2 restart bun-updates
-   
+
     # 设置服务器开机自启动
     pm2 startup
     pm2 save
@@ -290,7 +290,7 @@ bun-expo-updates-server/
    ```bash
    # 导出 Expo 客户端
    ./src/scripts/export-client.sh
-   
+
    # 上传更新到对象存储
    bun run src/scripts/uploadUpdatesToOSS.ts
    ```

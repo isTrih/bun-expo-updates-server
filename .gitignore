@@ -56,3 +56,5 @@ node_modules
 dist/
 doc_build/
 server
+
+# Build of docker
